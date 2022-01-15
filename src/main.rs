@@ -1,18 +1,9 @@
-extern crate piston_window;
-use piston_window::*;
-
+use board::Board;
+mod board;
+mod map;
+mod utils;
+    
 fn main() {
-    let mut window: PistonWindow = WindowSettings::new("Hello Piston!", (1920, 1080))
-    .exit_on_esc(true)
-    .build()
-    .unwrap_or_else(|e| { panic!("Failed to build PistonWindow: {}", e) });
-        
-    while let Some(e) = window.next() {
-        window.draw_2d(&e, |_c, g, _d| {
-            clear([0.5, 1.0, 0.5, 1.0], g);
-        });
-        if let Some(button) = e.press_args() {
-            println!("button!");
-        }
-    }
+
+
 }

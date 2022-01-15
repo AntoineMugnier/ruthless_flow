@@ -1,0 +1,12 @@
+/home/antoine/Documents/custom_projects/ruthless_flow/target/debug/deps/andrew-de3046e28ff33696.rmeta: /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/lib.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/line.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/mod.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/rectangle.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/mod.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/fontconfig.rs
+
+/home/antoine/Documents/custom_projects/ruthless_flow/target/debug/deps/libandrew-de3046e28ff33696.rlib: /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/lib.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/line.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/mod.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/rectangle.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/mod.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/fontconfig.rs
+
+/home/antoine/Documents/custom_projects/ruthless_flow/target/debug/deps/andrew-de3046e28ff33696.d: /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/lib.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/line.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/mod.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/rectangle.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/mod.rs /home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/fontconfig.rs
+
+/home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/lib.rs:
+/home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/line.rs:
+/home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/mod.rs:
+/home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/shapes/rectangle.rs:
+/home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/mod.rs:
+/home/antoine/.cargo/registry/src/github.com-1ecc6299db9ec823/andrew-0.3.1/src/text/fontconfig.rs:
