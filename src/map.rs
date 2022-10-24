@@ -1,45 +1,78 @@
-use std::{result::Iter, iter::Cycle,  slice};
+use std::{result::Iter, iter::Cycle,  slice, collections::VecDeque};
 
 use crate::utils::{Direction, Coordinates};
 
-pub enum Tile{
-    Occupied,
-    Marked{head_direction: Direction, tail_direction : (Direction, Direction, Direction)},
+#[derive(Copy, Clone)]
+pub enum TileType{
+    Marked ,
     Free,
     Separator,
-    Walled
+    Wall
 }
 
-pub struct Map{  
-    _sto : Vec<[Tile; 50]>,
-    _heads : Vec<Coordinates>,
-    x_size : u32,
-    
+pub struct Map {  
+    pub sto : VecDeque<Vec<TileType>>  
 }
 
 impl Map {
 pub fn new()-> Self{
-    Map{_sto: }
-}
-
-pub fn get_heads_iter_mut(&self) ->  slice::IterMut<Coordinates> {
-    self._heads.iter_mut()    
-}
-
-pub fn set_tile(&mut self, tile : Tile, coordinates : Coordinates){
-    self._sto[coordinates.x][coordinates.y] = tile;
-}
-
-pub fn get_neighbour_tile (& self, coordinates : Coordinates, direction : Direction) -> (Tile, Coordinates){
-    match direction {
-        Direction::Up => todo!(),
-        Direction::Down => todo!(),
-        Direction::Right => todo!(),
-        Direction::Left => todo!(),
-        Direction::None => todo!(),
+    Map{
+        sto: VecDeque::from(
+            [
+                vec![TileType::Free, TileType::Free, TileType::Free, TileType::Free, TileType::Free],
+                vec![TileType::Free, TileType::Free, TileType::Free, TileType::Free, TileType::Free],
+                vec![TileType::Free, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Free],
+                vec![TileType::Free, TileType::Free, TileType::Free, TileType::Free, TileType::Free]
+            ]
+        )
     }
-    self._sto[coordinates.x][coordinates.y] +
-    (self._sto[2][2], Coordinates{x: 2,y: 2})
 }
 
+pub fn set_tile(&mut self, position : Coordinates,  tile_type : TileType){
+    self.sto[position.x][position.y] = tile_type;
+}
+
+pub fn get_tile (&mut self, position : Coordinates, direction :Direction) -> Option<(TileType, Coordinates)>{
+
+    let mut x = position.x as isize;
+    let mut y :isize =  position.y as isize;
+
+    match direction {
+        Direction::Up => {
+            y +=1;
+        },
+        Direction::Down => {
+            y -= 1;
+        },
+        Direction::Right =>{
+            x += 1;
+        },
+        Direction::Left =>{
+            x -= 1;
+        },
+        Direction::None => {
+        },
+        };
+
+        if (x +1) <= self.get_length() as isize 
+        && (y +1) <= self.get_height() as isize
+        && x >= 0
+        && y >= 0{
+            let tile_type = self.sto[y as usize][x as usize];
+            let position =  Coordinates { x: x as usize, y: y as usize};
+            
+            Some((tile_type, position))
+        }
+        else{
+            None
+        } 
+}
+
+pub fn get_length(&self) -> usize{
+    self.sto.len()
+}
+
+pub fn get_height(&self) -> usize{
+    self.sto[0].len()
+}
 }

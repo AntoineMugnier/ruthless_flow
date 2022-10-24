@@ -1,4 +1,5 @@
 
+#[derive(Copy, Clone)]
 pub enum Direction {
     Up,
     Down,
@@ -6,7 +7,7 @@ pub enum Direction {
     Left,
     None
 }
-
+#[derive(Copy, Clone)]
 pub struct Coordinates{
     pub x: usize,
     pub y : usize

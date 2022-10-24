@@ -1,1 +1,0 @@
-/home/antoine/Documents/custom_projects/ruthless_flow/target/debug/ruthless_flow: /home/antoine/Documents/custom_projects/ruthless_flow/src/cord.rs /home/antoine/Documents/custom_projects/ruthless_flow/src/main.rs /home/antoine/Documents/custom_projects/ruthless_flow/src/map.rs /home/antoine/Documents/custom_projects/ruthless_flow/src/square.rs
