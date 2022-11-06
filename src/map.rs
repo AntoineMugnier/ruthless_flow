@@ -49,9 +49,7 @@ pub fn get_tile (&mut self, position : Coordinates, direction :Direction) -> Opt
         },
         Direction::Left =>{
             x -= 1;
-        },
-        Direction::None => {
-        },
+        }
         };
 
         if (x +1) <= self.get_length() as isize 

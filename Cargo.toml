@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 piston_window = "*"
 timer = "0.2.0"
+enumflags2 = "0.7.5"

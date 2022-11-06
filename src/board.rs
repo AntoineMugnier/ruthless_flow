@@ -22,7 +22,7 @@ pub struct Board{
     map: Map,
     heads :  HeadsVec,
     events_receiver : Receiver<BoardEvevents>,
-    next_direction : Direction
+    next_direction : Option<Direction>
 }
 
 impl Board{
@@ -33,16 +33,20 @@ pub fn new(events_receiver : Receiver<BoardEvevents>) -> Self{
 
     // Create first head
     let first_head_position = Coordinates{x:map.get_length()/2, y: 0};
-    let first_head =Head::new(first_head_position, Direction::None);
+    let first_head =Head::new(first_head_position, None);
     let heads = vec![Rc::new(RefCell::new(first_head))];
 
-    Self { map, heads, events_receiver, next_direction : Direction::None}
+    Self { map, heads, events_receiver, next_direction : None}
 }
 
 
 
 fn move_heads_handler(&mut self, direction : Direction){
     let map = &mut self.map;
+
+    for head in self.heads.iter(){
+        // match head.borrow_mut()
+    }
 
     self.heads = self.heads.iter().filter_map(|head| 
         {

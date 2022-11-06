@@ -1,12 +1,17 @@
+use enumflags2::{bitflags, BitFlags};
 
 #[derive(Copy, Clone)]
+#[bitflags]
+#[repr(u8)]
 pub enum Direction {
     Up,
     Down,
     Right,
-    Left,
-    None
+    Left
 }
+
+pub type DirectionFlags = BitFlags<Direction>;
+
 #[derive(Copy, Clone)]
 pub struct Coordinates{
     pub x: usize,
