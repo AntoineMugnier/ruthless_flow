@@ -2,7 +2,7 @@ use std::{result::Iter, iter::Cycle,  slice, collections::VecDeque};
 
 use crate::utils::{Direction, Coordinates};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum TileType{
     Marked ,
     Free,
@@ -29,10 +29,12 @@ pub fn new()-> Self{
 }
 
 pub fn set_tile(&mut self, position : Coordinates,  tile_type : TileType){
-    self.sto[position.x][position.y] = tile_type;
+    self.sto[position.y][position.x] = tile_type;
 }
-
-pub fn get_tile (&mut self, position : Coordinates, direction :Direction) -> Option<(TileType, Coordinates)>{
+pub fn get_tile (&mut self, position : Coordinates) -> TileType{
+    self.sto[position.y][position.x]
+}
+pub fn get_neighbour_tile (&mut self, position : Coordinates, direction :Direction) -> Option<(TileType, Coordinates)>{
 
     let mut x = position.x as isize;
     let mut y :isize =  position.y as isize;
