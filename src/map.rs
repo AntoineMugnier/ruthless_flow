@@ -1,4 +1,5 @@
 use std::{result::Iter, iter::Cycle,  slice, collections::VecDeque};
+use mockall::automock;
 
 use crate::utils::{Direction, Coordinates};
 
@@ -10,13 +11,25 @@ pub enum TileType{
     Wall
 }
 
-pub struct Map {  
-    pub sto : VecDeque<Vec<TileType>>  
+#[cfg_attr(test, mockall::automock)]
+pub trait Map{
+    fn new()-> Self;
+    fn set_tile(&mut self, position : Coordinates,  tile_type : TileType);
+    fn get_tile (&mut self, position : Coordinates) -> TileType;
+    fn get_neighbour_tile (&mut self, position : Coordinates, direction :Direction) -> Option<(TileType, Coordinates)>;
+    fn get_length(&self) -> usize;
+    fn get_height(&self) -> usize;
 }
 
-impl Map {
-pub fn new()-> Self{
-    Map{
+pub struct SimpleMap {  
+    pub sto : VecDeque<Vec<TileType>>  
+}
+impl SimpleMap{
+}
+impl Map for SimpleMap {
+
+fn new()-> Self{
+    SimpleMap{
         sto: VecDeque::from(
             [
                 vec![TileType::Free, TileType::Free, TileType::Free, TileType::Free, TileType::Free],
@@ -28,13 +41,14 @@ pub fn new()-> Self{
     }
 }
 
-pub fn set_tile(&mut self, position : Coordinates,  tile_type : TileType){
+fn set_tile(&mut self, position : Coordinates,  tile_type : TileType){
     self.sto[position.y][position.x] = tile_type;
 }
-pub fn get_tile (&mut self, position : Coordinates) -> TileType{
+
+fn get_tile (&mut self, position : Coordinates) -> TileType{
     self.sto[position.y][position.x]
 }
-pub fn get_neighbour_tile (&mut self, position : Coordinates, direction :Direction) -> Option<(TileType, Coordinates)>{
+fn get_neighbour_tile (&mut self, position : Coordinates, direction :Direction) -> Option<(TileType, Coordinates)>{
 
     let mut x = position.x as isize;
     let mut y :isize =  position.y as isize;
@@ -68,11 +82,11 @@ pub fn get_neighbour_tile (&mut self, position : Coordinates, direction :Directi
         } 
 }
 
-pub fn get_length(&self) -> usize{
+fn get_length(&self) -> usize{
     self.sto.len()
 }
 
-pub fn get_height(&self) -> usize{
+fn get_height(&self) -> usize{
     self.sto[0].len()
 }
 }

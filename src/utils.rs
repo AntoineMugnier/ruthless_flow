@@ -1,6 +1,6 @@
 use enumflags2::{bitflags, BitFlags};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 #[bitflags]
 #[repr(u8)]
 pub enum Direction {
