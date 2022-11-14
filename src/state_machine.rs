@@ -1,15 +1,8 @@
 //use crate::Signals;
 
-pub trait StateMachine{
- 
-}
+pub trait StateMachine {}
 
-impl dyn StateMachine{
-
-    pub fn init(){
-
-    }
-    pub fn dispatch(){
-
-    }
+impl dyn StateMachine {
+    pub fn init() {}
+    pub fn dispatch() {}
 }

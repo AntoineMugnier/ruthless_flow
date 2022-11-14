@@ -7,13 +7,13 @@ pub enum Direction {
     Up,
     Down,
     Right,
-    Left
+    Left,
 }
 
 pub type DirectionFlags = BitFlags<Direction>;
 
 #[derive(Copy, Clone)]
-pub struct Coordinates{
+pub struct Coordinates {
     pub x: usize,
-    pub y : usize
+    pub y: usize,
 }

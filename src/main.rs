@@ -1,11 +1,9 @@
 mod board;
-mod map;
-mod utils;
-mod state_machine;
 mod heads;
+mod map;
+mod state_machine;
+mod utils;
 
 fn main() {
-//let board = board::Board::new();
-
-
+    //let board = board::SimpleBoard::new();
 }
