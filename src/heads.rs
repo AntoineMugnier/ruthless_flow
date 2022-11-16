@@ -7,6 +7,13 @@ use crate::board::BoardEvevents;
 use crate::map::{Map, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use rand::{thread_rng, Rng};
+
+#[cfg(not(test))]
+type DirectionPicker = crate::direction_picker::DirectionPicker;
+
+#[cfg(test)]
+type DirectionPicker = crate::direction_picker::MockDirectionPicker;
+
 pub enum HeadEvents<'a, MapType: Map> {
     MOVE_HEAD {
         direction: Option<Direction>,
@@ -52,7 +59,6 @@ mod private {
             direction: Direction,
             map: &mut impl Map,
         ) -> HeadAction;
-        fn pick_one_of_directions_left(prohibited_directions: &mut DirectionFlags) -> Direction;
         fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl Map);
         fn try_explore_direction(
             &mut self,
@@ -94,36 +100,6 @@ impl private::Sealed for SimpleHead {
         HeadAction::HAS_MOVED
     }
 
-    fn pick_one_of_directions_left(prohibited_directions: &mut DirectionFlags) -> Direction {
-        // Full bitfield means that all dirs have already been explored, which should not be possible. If it is the case the map is ill-formed
-        assert!(
-            prohibited_directions.contains(!DirectionFlags::all()),
-            "No more available dirs to pick"
-        );
-
-        // Generate a vector containing all available directions
-        let mut dir_vec = Vec::<Direction>::new();
-        for dir in [
-            Direction::Up,
-            Direction::Down,
-            Direction::Left,
-            Direction::Right,
-        ] {
-            if !prohibited_directions.contains(dir) {
-                dir_vec.push(dir)
-            }
-        }
-
-        // Select a random direction among available ones
-        let mut rng = thread_rng();
-        let random_index = rng.gen_range(0..dir_vec.len());
-        let picked_direction = dir_vec[random_index];
-
-        // Make the direction unavailable in prohibited_directions
-        prohibited_directions.insert(picked_direction);
-
-        picked_direction
-    }
 
     fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl Map) {
         let head_original_position = self.get_position();
@@ -138,7 +114,7 @@ impl private::Sealed for SimpleHead {
             proposed_direction = direction;
             prohibited_directions.insert(proposed_direction);
         } else {
-            proposed_direction = Self::pick_one_of_directions_left(&mut prohibited_directions);
+            proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
         }
 
         let chosen_direction = self.try_explore_direction(proposed_direction, &mut prohibited_directions, map);
@@ -172,7 +148,7 @@ impl private::Sealed for SimpleHead {
 
         match status {
             HeadAction::HAS_NOT_MOVED => {
-                let choosen_direction = Self::pick_one_of_directions_left(prohibited_directions);
+                let choosen_direction = DirectionPicker::pick(prohibited_directions);
                 self.try_explore_direction(choosen_direction, prohibited_directions, map)
             }
             HeadAction::HAS_MOVED => return choosen_direction,
