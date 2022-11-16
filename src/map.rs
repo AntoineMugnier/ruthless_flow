@@ -3,7 +3,7 @@ use std::{collections::VecDeque, iter::Cycle, result::Iter, slice};
 
 use crate::utils::{Coordinates, Direction};
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
     Marked,
     Free,

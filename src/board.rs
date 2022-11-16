@@ -1,10 +1,6 @@
 use crate::heads::{self, Head, HeadAction, HeadEvents, SimpleHead};
 use crate::map::{Map, TileType};
-use crate::utils::{Coordinates, Direction};
-use std::cell::RefCell;
-use std::collections::VecDeque;
-use std::ops::Deref;
-use std::rc::Rc;
+use crate::utils::{Coordinates, Direction, DirectionFlags};
 use std::sync::mpsc::{Receiver, Sender};
 
 //extern crate timer;
@@ -38,7 +34,7 @@ pub struct SimpleBoard<MapType: Map> {
 }
 
 mod private {
-    use crate::utils::Direction;
+    use super::*;
 
     pub trait Sealed {
         fn move_heads_handler(&mut self, direction: Option<Direction>);
@@ -55,7 +51,8 @@ impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
         let map = &mut self.map;
 
         for head in self.heads.iter_mut() {
-            let move_head_event = HeadEvents::MOVE_HEAD { direction, map };
+            let prohibited_directions = DirectionFlags::empty();
+            let move_head_event = HeadEvents::MOVE_HEAD { direction, prohibited_directions, map };
             head.dispatch(move_head_event);
         }
     }
@@ -73,12 +70,14 @@ impl<MapType: Map> SimpleBoard<MapType> {
             x: map.get_length() / 2,
             y: 0,
         };
+
         let first_head = SimpleHead::new(
             0,
             first_head_position,
             Direction::Down,
             events_sender.clone(),
         );
+
         let heads = vec![Box::new(first_head)];
 
         Self {

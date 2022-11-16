@@ -10,6 +10,7 @@ use rand::{thread_rng, Rng};
 pub enum HeadEvents<'a, MapType: Map> {
     MOVE_HEAD {
         direction: Option<Direction>,
+        prohibited_directions : DirectionFlags, // bitfield to hold already explored or forbidden directions
         map: &'a mut MapType,
     },
 }
@@ -38,11 +39,7 @@ pub trait Head: private::Sealed {
     fn dispatch(&mut self, event: HeadEvents<impl Map>);
 }
 mod private {
-    use super::HeadAction;
-    use crate::{
-        map::Map,
-        utils::{Coordinates, Direction, DirectionFlags},
-    };
+    use super::*;
 
     pub trait Sealed {
         fn set_position(&mut self, position: Coordinates);
@@ -55,12 +52,12 @@ mod private {
             direction: Direction,
             map: &mut impl Map,
         ) -> HeadAction;
-        fn pick_one_of_directions_left(unavailable_dirs: &mut DirectionFlags) -> Direction;
-        fn move_head_handler(&mut self, direction: Option<Direction>, map: &mut impl Map);
+        fn pick_one_of_directions_left(prohibited_directions: &mut DirectionFlags) -> Direction;
+        fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl Map);
         fn try_explore_direction(
             &mut self,
             choosen_direction: Direction,
-            dir_flags: &mut DirectionFlags,
+            prohibited_directions: &mut DirectionFlags,
             map: &mut impl Map,
         ) -> Direction;
         fn explore_direction(&mut self, direction: Direction, map: &mut impl Map) -> HeadAction;
@@ -97,10 +94,10 @@ impl private::Sealed for SimpleHead {
         HeadAction::HAS_MOVED
     }
 
-    fn pick_one_of_directions_left(unavailable_dirs: &mut DirectionFlags) -> Direction {
+    fn pick_one_of_directions_left(prohibited_directions: &mut DirectionFlags) -> Direction {
         // Full bitfield means that all dirs have already been explored, which should not be possible. If it is the case the map is ill-formed
         assert!(
-            unavailable_dirs.contains(!DirectionFlags::all()),
+            prohibited_directions.contains(!DirectionFlags::all()),
             "No more available dirs to pick"
         );
 
@@ -112,42 +109,39 @@ impl private::Sealed for SimpleHead {
             Direction::Left,
             Direction::Right,
         ] {
-            if !unavailable_dirs.contains(dir) {
+            if !prohibited_directions.contains(dir) {
                 dir_vec.push(dir)
             }
         }
 
-        // Select a radom direction among available ones
+        // Select a random direction among available ones
         let mut rng = thread_rng();
         let random_index = rng.gen_range(0..dir_vec.len());
         let picked_direction = dir_vec[random_index];
 
-        // Make the direction unavailable in dir_flags
-        unavailable_dirs.insert(picked_direction);
+        // Make the direction unavailable in prohibited_directions
+        prohibited_directions.insert(picked_direction);
 
         picked_direction
     }
 
-    fn move_head_handler(&mut self, direction: Option<Direction>, map: &mut impl Map) {
+    fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl Map) {
         let head_original_position = self.get_position();
         let head_original_provenance = self.get_provenance();
 
-        // Create the bitfield to hold already explored or forbidden directions
-        let mut dir_flags = DirectionFlags::empty();
-
         // Prevent head from going back to its previous path
-        dir_flags.insert(self.coming_from);
+        prohibited_directions.insert(self.coming_from);
 
         // Select a random direction if no one has been set
         let proposed_direction;
         if let Some(direction) = direction {
             proposed_direction = direction;
-            dir_flags.insert(proposed_direction);
+            prohibited_directions.insert(proposed_direction);
         } else {
-            proposed_direction = Self::pick_one_of_directions_left(&mut dir_flags);
+            proposed_direction = Self::pick_one_of_directions_left(&mut prohibited_directions);
         }
 
-        let chosen_direction = self.try_explore_direction(proposed_direction, &mut dir_flags, map);
+        let chosen_direction = self.try_explore_direction(proposed_direction, &mut prohibited_directions, map);
 
         let new_tile_type = map.get_tile(self.get_position());
 
@@ -171,15 +165,15 @@ impl private::Sealed for SimpleHead {
     fn try_explore_direction(
         &mut self,
         choosen_direction: Direction,
-        dir_flags: &mut DirectionFlags,
+        prohibited_directions: &mut DirectionFlags,
         map: &mut impl Map,
     ) -> Direction {
         let status = self.explore_direction(choosen_direction, map);
 
         match status {
             HeadAction::HAS_NOT_MOVED => {
-                let choosen_direction = Self::pick_one_of_directions_left(dir_flags);
-                self.try_explore_direction(choosen_direction, dir_flags, map)
+                let choosen_direction = Self::pick_one_of_directions_left(prohibited_directions);
+                self.try_explore_direction(choosen_direction, prohibited_directions, map)
             }
             HeadAction::HAS_MOVED => return choosen_direction,
         }
@@ -222,12 +216,44 @@ impl Head for SimpleHead {
 
     fn dispatch(&mut self, event: HeadEvents<impl Map>) {
         match event {
-            HeadEvents::MOVE_HEAD { direction, map } => {
-                private::Sealed::move_head_handler(self, direction, map)
+            HeadEvents::MOVE_HEAD { direction, prohibited_directions, map } => {
+                private::Sealed::move_head_handler(self, direction,prohibited_directions, map)
             }
         };
     }
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use mockall::predicate;
+
+    use crate::map::{SimpleMap, MockMap};
+    use super::*;
+
+    #[test]
+    fn test_move_heads() {
+
+        //Head construction
+        let (event_sender, event_receiver) = channel();
+        let mut simple_head = SimpleHead::new(0, Coordinates{x:0, y:0}, Direction::Down, event_sender);
+        
+        //Create mock map
+        let mut map = MockMap::new();
+        map.expect_get_tile();
+        map.expect_get_neighbour_tile();
+        map.expect_set_tile();
+
+        // let event = HeadEvents::MOVE_HEAD { direction: Some(Direction::Down), map: &mut map};
+        // simple_head.dispatch(event);
+
+        // Move to Wall
+
+        // Move to map edge
+
+        // Move to Marked tile
+
+        // Move to Free tile
+
+        // Move to Separator
+    }
+}
