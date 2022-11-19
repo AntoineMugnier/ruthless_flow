@@ -26,7 +26,7 @@ pub type Id = u32;
 #[derive(PartialEq)]
 pub enum HeadAction {
     HAS_NOT_MOVED,
-    HAS_MOVED,
+    HAS_MOVED(TileType),
 }
 
 pub struct SimpleHead {
@@ -53,19 +53,13 @@ mod private {
         fn set_provenance(&mut self, coming_from: Direction);
         fn get_position(&self) -> Coordinates;
         fn get_provenance(&self) -> Direction;
-        fn move_and_mark_tile(
-            &mut self,
-            position: Coordinates,
-            direction: Direction,
-            map: &mut impl Map,
-        ) -> HeadAction;
         fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl Map);
         fn try_explore_direction(
             &mut self,
             choosen_direction: Direction,
             prohibited_directions: &mut DirectionFlags,
             map: &mut impl Map,
-        ) -> Direction;
+        ) -> (Direction, TileType);
         fn explore_direction(&mut self, direction: Direction, map: &mut impl Map) -> HeadAction;
     }
 }
@@ -87,19 +81,6 @@ impl private::Sealed for SimpleHead {
         self.coming_from
     }
 
-    fn move_and_mark_tile(
-        &mut self,
-        position: Coordinates,
-        direction: Direction,
-        map: &mut impl Map,
-    ) -> HeadAction {
-        self.coming_from = direction;
-        self.position = position;
-
-        map.set_tile(position, TileType::Marked);
-        HeadAction::HAS_MOVED
-    }
-
 
     fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl Map) {
         let head_original_position = self.get_position();
@@ -117,11 +98,9 @@ impl private::Sealed for SimpleHead {
             proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
         }
 
-        let chosen_direction = self.try_explore_direction(proposed_direction, &mut prohibited_directions, map);
+        let (chosen_direction, target_tile) = self.try_explore_direction(proposed_direction, &mut prohibited_directions, map);
 
-        let new_tile_type = map.get_tile(self.get_position());
-
-        match new_tile_type {
+        match target_tile {
             TileType::Separator => {
                 let add_head_event = BoardEvevents::ADD_HEAD {
                     position: head_original_position,
@@ -134,7 +113,7 @@ impl private::Sealed for SimpleHead {
                 let remove_head_event = BoardEvevents::KILL_HEAD { id: self.id };
                 self.events_sender.send(remove_head_event).unwrap();
             }
-            _ => {}
+            _ => {map.set_tile(self.position, TileType::Marked);}
         }
     }
 
@@ -143,15 +122,13 @@ impl private::Sealed for SimpleHead {
         choosen_direction: Direction,
         prohibited_directions: &mut DirectionFlags,
         map: &mut impl Map,
-    ) -> Direction {
-        let status = self.explore_direction(choosen_direction, map);
-
-        match status {
+    ) -> (Direction, TileType) {
+        match self.explore_direction(choosen_direction, map) {
             HeadAction::HAS_NOT_MOVED => {
                 let choosen_direction = DirectionPicker::pick(prohibited_directions);
                 self.try_explore_direction(choosen_direction, prohibited_directions, map)
             }
-            HeadAction::HAS_MOVED => return choosen_direction,
+            HeadAction::HAS_MOVED(tile_type) => return (choosen_direction, tile_type),
         }
     }
 
@@ -160,7 +137,9 @@ impl private::Sealed for SimpleHead {
         if let Some((tile_type, position)) = map.get_neighbour_tile(position, direction) {
             match tile_type {
                 TileType::Free | TileType::Separator | TileType::Marked => {
-                    self.move_and_mark_tile(position, direction, map)
+                    self.coming_from = direction;
+                    self.position = position; 
+                    HeadAction::HAS_MOVED(tile_type)
                 }
                 TileType::Wall => HeadAction::HAS_NOT_MOVED,
             }
