@@ -180,27 +180,44 @@ impl Head for SimpleHead {
 
 #[cfg(test)]
 mod tests {
-    use mockall::predicate;
+    use mockall::{predicate, Sequence};
 
-    use crate::map::{SimpleMap, MockMap};
+    use crate::{map::{SimpleMap, MockMap}, direction_picker::MockDirectionPicker};
     use super::*;
 
     #[test]
     fn test_move_heads() {
 
-        //Head construction
         let (event_sender, event_receiver) = channel();
-        let mut simple_head = SimpleHead::new(0, Coordinates{x:0, y:0}, Direction::Down, event_sender);
         
         //Create mock map
-        let mut map = MockMap::new();
-        map.expect_get_tile();
-        map.expect_get_neighbour_tile();
-        map.expect_set_tile();
 
-        // let event = HeadEvents::MOVE_HEAD { direction: Some(Direction::Down), map: &mut map};
-        // simple_head.dispatch(event);
 
+        {
+            let mut seq = Sequence::new();
+            let mut map = MockMap::default();
+
+            //Direct move to free tile
+            let mut simple_head = SimpleHead::new(0, Coordinates{x:0, y:0}, Direction::Down, event_sender);
+            map.expect_get_neighbour_tile().times(1).in_sequence(&mut seq).returning(|position, direction| (Some((TileType::Free, Coordinates{x:1, y:0}))));
+            map.expect_set_tile().times(1).in_sequence(&mut seq).withf(|position, tile_type| {position.x == 1 && position.y == 0 && *tile_type == TileType::Marked}).return_const(());
+            let event = HeadEvents::MOVE_HEAD { direction: Some(Direction::Down), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
+            simple_head.dispatch(event)
+        }
+
+        {
+            let mut seq = Sequence::new();
+            let mut map = MockMap::default();
+            let picker_ctx = MockDirectionPicker::pick_context();
+            
+        }
+
+        //picker_ctx.expect().times(1).in_sequence(&mut seq).returning(|_| Direction::Up);
+
+
+
+        // Check prohibited input_dir
+        // Chek move dir to wall 
         // Move to Wall
 
         // Move to map edge
