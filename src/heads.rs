@@ -1,18 +1,14 @@
 use enumflags2::{make_bitflags, BitFlag};
 use std::cell::{RefCell, UnsafeCell};
-use std::sync::mpsc::{channel, Sender};
 use std::u8;
 
 use crate::board::BoardEvevents;
+use crate::direction_picker::DirectionPicker;
+use crate::mpsc::Sender;
 use crate::map::{Map, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use rand::{thread_rng, Rng};
 
-#[cfg(not(test))]
-type DirectionPicker = crate::direction_picker::DirectionPicker;
-
-#[cfg(test)]
-type DirectionPicker = crate::direction_picker::MockDirectionPicker;
 
 pub enum HeadEvents<'a, MapType: Map> {
     MOVE_HEAD {
@@ -107,7 +103,7 @@ impl private::Sealed for SimpleHead {
                     coming_from: head_original_provenance,
                     parent_direction: chosen_direction,
                 };
-                self.events_sender.send(add_head_event).unwrap();
+                ;self.events_sender.send(add_head_event).unwrap();
             }
             TileType::Marked => {
                 let remove_head_event = BoardEvevents::KILL_HEAD { id: self.id };
@@ -180,20 +176,19 @@ impl Head for SimpleHead {
 
 #[cfg(test)]
 mod tests {
-    use mockall::{predicate, Sequence};
-
-    use crate::{map::{SimpleMap, MockMap}, direction_picker::MockDirectionPicker};
+    use mockall::{predicate, Sequence, mock};
+    use crate::{map::{MockMap}, direction_picker::DirectionPicker};
     use super::*;
 
+
+    
     #[test]
     fn test_move_heads() {
 
-        let (event_sender, event_receiver) = channel();
         
         //Create mock map
-
-
         {
+            let event_sender = Sender::default();
             let mut seq = Sequence::new();
             let mut map = MockMap::default();
 
@@ -208,13 +203,11 @@ mod tests {
         {
             let mut seq = Sequence::new();
             let mut map = MockMap::default();
-            let picker_ctx = MockDirectionPicker::pick_context();
+            let picker_ctx = DirectionPicker::pick_context();
             
         }
 
         //picker_ctx.expect().times(1).in_sequence(&mut seq).returning(|_| Direction::Up);
-
-
 
         // Check prohibited input_dir
         // Chek move dir to wall 

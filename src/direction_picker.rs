@@ -1,10 +1,18 @@
-use rand::{thread_rng, Rng};
-use crate::utils::{DirectionFlags, Direction};
 
-pub struct DirectionPicker{}
+#[cfg(not(test))]
+pub type DirectionPicker = private::DirectionPicker;
+#[cfg(test)]
+pub type DirectionPicker = private::MockDirectionPicker;
 
-#[cfg_attr(test, mockall::automock)]
-impl DirectionPicker{
+mod private{
+    use rand::{thread_rng, Rng};
+    use crate::utils::{DirectionFlags, Direction};
+    
+
+    pub struct DirectionPicker{}
+
+    #[cfg_attr(test, mockall::automock)]
+    impl DirectionPicker{
     pub fn pick(prohibited_directions: &mut DirectionFlags) -> Direction {
         // Full bitfield means that all dirs have already been explored, which should not be possible. If it is the case the map is ill-formed
         assert!(
@@ -35,4 +43,5 @@ impl DirectionPicker{
 
         picked_direction
     }
+}
 }

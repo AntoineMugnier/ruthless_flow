@@ -1,7 +1,8 @@
 use crate::heads::{self, Head, HeadAction, HeadEvents, SimpleHead};
 use crate::map::{Map, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver};
+use crate::mpsc::Sender;
 
 //extern crate timer;
 
