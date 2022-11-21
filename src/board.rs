@@ -10,6 +10,7 @@ type HeadsCell = Box<SimpleHead>;
 
 type HeadsVec = Vec<HeadsCell>;
 
+#[derive(Debug, Clone)]
 pub enum BoardEvevents {
     SLIDE_FRAME_TICK,
     KILL_HEAD {

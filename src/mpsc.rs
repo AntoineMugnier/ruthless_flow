@@ -1,8 +1,14 @@
 use mockall::mock;
-use std::sync::mpsc::{SendError};
 
 #[cfg(not(test))]
 pub type Sender<T> = std::sync::mpsc::Sender<T>;
+
+#[cfg(not(test))]
+use std::sync::mpsc::{SendError};
+
+#[cfg(test)]
+#[derive(Debug, Clone)]
+pub struct SendError<T>{phantom_data: core::marker::PhantomData<T>}
 
 #[cfg(test)]
 pub type Sender<T> = MockSender<T>;

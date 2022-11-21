@@ -30,6 +30,7 @@ pub struct SimpleHead {
     position: Coordinates,
     coming_from: Direction,
     events_sender: Sender<BoardEvevents>,
+
 }
 
 pub trait Head: private::Sealed {
@@ -50,13 +51,12 @@ mod private {
         fn get_position(&self) -> Coordinates;
         fn get_provenance(&self) -> Direction;
         fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl Map);
-        fn try_explore_direction(
-            &mut self,
-            choosen_direction: Direction,
+        fn explore_direction(
+            position: Coordinates,
+            chosen_direction: Direction,
             prohibited_directions: &mut DirectionFlags,
             map: &mut impl Map,
-        ) -> (Direction, TileType);
-        fn explore_direction(&mut self, direction: Direction, map: &mut impl Map) -> HeadAction;
+        ) -> (Direction, TileType, Coordinates);
     }
 }
 
@@ -79,8 +79,10 @@ impl private::Sealed for SimpleHead {
 
 
     fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl Map) {
-        let head_original_position = self.get_position();
-        let head_original_provenance = self.get_provenance();
+
+        let original_tile = map.get_tile(self.position);
+        let original_position = self.get_position();
+        let original_provenance = self.get_provenance();
 
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from);
@@ -94,57 +96,63 @@ impl private::Sealed for SimpleHead {
             proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
         }
 
-        let (chosen_direction, target_tile) = self.try_explore_direction(proposed_direction, &mut prohibited_directions, map);
+        // Try to explore explore the `proposed_direction`. If the move is impossible, explore all the other authorized directions around the head.
+        let (chosen_direction, target_tile, target_position) = Self::explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map);
 
-        match target_tile {
-            TileType::Separator => {
-                let add_head_event = BoardEvevents::ADD_HEAD {
-                    position: head_original_position,
-                    coming_from: head_original_provenance,
-                    parent_direction: chosen_direction,
-                };
-                ;self.events_sender.send(add_head_event).unwrap();
-            }
+        // Order the board to create a new head if the tile on which we are on a separator
+        if map.get_tile(self.position) == TileType::Separator {
+            let add_head_event = BoardEvevents::ADD_HEAD {
+                position: original_position,
+                coming_from: original_provenance,
+                parent_direction: chosen_direction,
+            };
+            self.events_sender.send(add_head_event).unwrap();
+        }
+
+        //Special action depending on the type of tile we reach
+        match target_tile{
+            // Order the board to kil self
             TileType::Marked => {
                 let remove_head_event = BoardEvevents::KILL_HEAD { id: self.id };
                 self.events_sender.send(remove_head_event).unwrap();
-            }
-            _ => {map.set_tile(self.position, TileType::Marked);}
         }
+            // Move the head to the location and mark the tile
+            TileType::Free | TileType::Separator =>  {
+                map.set_tile(self.position, TileType::Marked);
+                self.set_position(target_position); 
+                self.coming_from = chosen_direction;
+            }
+            TileType::Wall => assert!(true, "Cannot move to a wall"),
+
+        }
+        
     }
 
-    fn try_explore_direction(
-        &mut self,
-        choosen_direction: Direction,
+    fn explore_direction(
+        position: Coordinates,
+        chosen_direction: Direction,
         prohibited_directions: &mut DirectionFlags,
         map: &mut impl Map,
-    ) -> (Direction, TileType) {
-        match self.explore_direction(choosen_direction, map) {
-            HeadAction::HAS_NOT_MOVED => {
-                let choosen_direction = DirectionPicker::pick(prohibited_directions);
-                self.try_explore_direction(choosen_direction, prohibited_directions, map)
-            }
-            HeadAction::HAS_MOVED(tile_type) => return (choosen_direction, tile_type),
-        }
-    }
+    ) -> (Direction, TileType, Coordinates) {
 
-    fn explore_direction(&mut self, direction: Direction, map: &mut impl Map) -> HeadAction {
-        let position = self.get_position();
-        if let Some((tile_type, position)) = map.get_neighbour_tile(position, direction) {
+        if let Some((tile_type, position)) = map.get_neighbour_tile(position, chosen_direction) {
+
             match tile_type {
-                TileType::Free | TileType::Separator | TileType::Marked => {
-                    self.coming_from = direction;
-                    self.position = position; 
-                    HeadAction::HAS_MOVED(tile_type)
-                }
-                TileType::Wall => HeadAction::HAS_NOT_MOVED,
+                TileType::Free | TileType::Separator | TileType::Marked => return (chosen_direction, tile_type, position),
+                TileType::Wall => {
+                    let chosen_direction = DirectionPicker::pick(prohibited_directions);
+                    Self::explore_direction(position, chosen_direction, prohibited_directions, map)
+                },
             }
         }
         // We are targetting an edge of the map
         else {
-            HeadAction::HAS_NOT_MOVED
+            let chosen_direction = DirectionPicker::pick(prohibited_directions);
+            Self::explore_direction(position, chosen_direction, prohibited_directions, map)
         }
+        
     }
+
 }
 // TODO
 // - Separator
@@ -161,7 +169,7 @@ impl Head for SimpleHead {
             id,
             position,
             coming_from,
-            events_sender,
+            events_sender
         }
     }
 
@@ -178,6 +186,7 @@ impl Head for SimpleHead {
 mod tests {
     use mockall::{predicate, Sequence, mock};
     use crate::{map::{MockMap}, direction_picker::DirectionPicker};
+    use crate::mpsc::SendError;
     use super::*;
 
 
@@ -185,7 +194,8 @@ mod tests {
     #[test]
     fn test_move_heads() {
 
-        
+                //let picker_ctx = DirectionPicker::pick_context();
+/*
         //Create mock map
         {
             let event_sender = Sender::default();
@@ -197,14 +207,27 @@ mod tests {
             map.expect_get_neighbour_tile().times(1).in_sequence(&mut seq).returning(|position, direction| (Some((TileType::Free, Coordinates{x:1, y:0}))));
             map.expect_set_tile().times(1).in_sequence(&mut seq).withf(|position, tile_type| {position.x == 1 && position.y == 0 && *tile_type == TileType::Marked}).return_const(());
             let event = HeadEvents::MOVE_HEAD { direction: Some(Direction::Down), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
-            simple_head.dispatch(event)
+            simple_head.dispatch(event);
         }
-
+        //let picker_ctx = DirectionPicker::pick_context();
+*/
         {
             let mut seq = Sequence::new();
             let mut map = MockMap::default();
-            let picker_ctx = DirectionPicker::pick_context();
-            
+            let mut event_sender = Sender::default();
+
+            map.expect_get_tile().times(1).in_sequence(&mut seq).return_const(TileType::Separator);
+            map.expect_get_neighbour_tile().times(1).in_sequence(&mut seq).returning(|position, direction| (Some((TileType::Separator, Coordinates{x:1, y:0}))));
+            event_sender.expect_send().times(1).in_sequence(&mut seq).withf(|board_event| {
+                match board_event{
+                BoardEvevents::ADD_HEAD { position: Coordinates{x:1, y:0}, coming_from: Direction::Up, parent_direction: Direction::Left} => return true,
+                _ => return false
+            }
+                }).return_const(Result::<(), SendError<BoardEvevents>>::Ok(()));
+            map.expect_set_tile().times(1).in_sequence(&mut seq).withf(|position, tile_type| {position.x == 1 && position.y == 0 && *tile_type == TileType::Marked}).return_const(());
+            let event = HeadEvents::MOVE_HEAD { direction: Some(Direction::Down), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
+            let mut simple_head = SimpleHead::new(0, Coordinates{x:0, y:0}, Direction::Down, event_sender);
+            simple_head.dispatch(event);
         }
 
         //picker_ctx.expect().times(1).in_sequence(&mut seq).returning(|_| Direction::Up);
