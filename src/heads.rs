@@ -251,7 +251,7 @@ fn test_move_0(){
     let mut map = MockMap::default();
     let mut event_sender = Sender::default();
 
-    let tc = TestConditions::General{
+    let tc0 = TestConditions::General{
         original_tile : TileType::Free,
         head_provenance : Direction::Up,
         original_position : Coordinates{x :10, y:10}, 
@@ -261,26 +261,26 @@ fn test_move_0(){
         separator: None
     };
 
-    test_move(&mut seq, &mut map, &mut event_sender, tc);
+    test_move(&mut seq, &mut map, &mut event_sender, tc0);
 
-    let tc = TestConditions::General{
-        original_tile : tc.target_tile,
-        head_provenance : tc.head_going_to,
-        original_position : tc.target_position, 
+    let tc1 = TestConditions::General{
+        original_tile : tc0.target_tile,
+        head_provenance : tc0.head_going_to,
+        original_position : tc0.target_position, 
         target_tile  : TileType::Free,
         head_going_to : Direction::Right,
         target_position : Coordinates{x :11, y:10},
         separator: None
     };
 
-    test_move(&mut seq, &mut map, &mut event_sender, tc);
+    test_move(&mut seq, &mut map, &mut event_sender, tc1);
 
-    let mut simple_head = SimpleHead::new(0, tc.original_position, tc.head_provenance,  event_sender);
+    let mut simple_head = SimpleHead::new(0, tc0.original_position, tc0.head_provenance,  event_sender);
 
-    let event = HeadEvents::MOVE_HEAD { direction: Some(tc.head_going_to), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
+    let event = HeadEvents::MOVE_HEAD { direction: Some(tc0.head_going_to), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
     simple_head.dispatch(event);
 
-    let event = HeadEvents::MOVE_HEAD { direction: Some(tc.head_going_to), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
+    let event = HeadEvents::MOVE_HEAD { direction: Some(tc1.head_going_to), prohibited_directions : DirectionFlags::empty(),  map: &mut map};
     simple_head.dispatch(event);
 
 }
