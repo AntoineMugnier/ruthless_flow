@@ -3,6 +3,8 @@
 pub type DirectionPicker = private::DirectionPicker;
 #[cfg(test)]
 pub type DirectionPicker = private::MockDirectionPicker;
+#[cfg(test)]
+pub type PickerCtx = private::__mock_MockDirectionPicker::__pick::Context;
 
 mod private{
     use rand::{thread_rng, Rng};
