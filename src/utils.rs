@@ -9,7 +9,16 @@ pub enum Direction {
     Right,
     Left,
 }
-
+impl Direction{
+pub fn reverse(&self) -> Direction {
+    match self {
+        Direction::Down => Direction::Up,
+        Direction::Up => Direction::Down,
+        Direction::Right => Direction::Left,
+        Direction::Left => Direction::Right
+    }
+}
+}
 pub type DirectionFlags = BitFlags<Direction>;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Coordinates {
