@@ -330,6 +330,7 @@ fn test_basic_moves(){
     test_move(&mut seq, &mut map, &mut event_sender, &tc1);
 
     let previous_way_2 = target_way_1;
+    let backward_way_2 = target_way_1.alt_direction.reverse();
     let target_way_2 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :10, y:11}, alt_target_tile : TileType::Free};
     
     let tc2 = TestConditions::General{
@@ -354,11 +355,11 @@ fn test_basic_moves(){
     };
     test_move(&mut seq, &mut map, &mut event_sender, &tc3);
 
-    let mut simple_head = SimpleHead::new(0, previous_way_3.alt_target_position, previous_way_3.alt_direction,  event_sender);
+    let mut simple_head = SimpleHead::new(0, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender);
 
     dispatch_head_evt(target_way_0.alt_direction, &mut map, &mut simple_head);
     dispatch_head_evt(target_way_1.alt_direction, &mut map, &mut simple_head);
-    dispatch_head_evt(target_way_2.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(backward_way_2, &mut map, &mut simple_head);
     dispatch_head_evt(target_way_3.alt_direction, &mut map, &mut simple_head);
 
 }
