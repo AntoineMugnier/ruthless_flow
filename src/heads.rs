@@ -139,26 +139,26 @@ impl private::Sealed for SimpleHead {
     }
 
     fn explore_direction(
-        position: Coordinates,
+        original_position: Coordinates,
         chosen_direction: Direction,
         prohibited_directions: &mut DirectionFlags,
         map: &mut impl Map,
     ) -> (Direction, TileType, Coordinates) {
 
-        if let Some((tile_type, position)) = map.get_neighbour_tile(position, chosen_direction) {
+        if let Some((tile_type, target_position)) = map.get_neighbour_tile(original_position, chosen_direction) {
 
             match tile_type {
-                TileType::Free | TileType::Separator | TileType::Marked => return (chosen_direction, tile_type, position),
+                TileType::Free | TileType::Separator | TileType::Marked => return (chosen_direction, tile_type, target_position),
                 TileType::Wall => {
                     let chosen_direction = DirectionPicker::pick(prohibited_directions);
-                    Self::explore_direction(position, chosen_direction, prohibited_directions, map)
+                    Self::explore_direction(original_position, chosen_direction, prohibited_directions, map)
                 },
             }
         }
         // We are targetting an edge of the map
         else {
             let chosen_direction = DirectionPicker::pick(prohibited_directions);
-            Self::explore_direction(position, chosen_direction, prohibited_directions, map)
+            Self::explore_direction(original_position, chosen_direction, prohibited_directions, map)
         }
         
     }
@@ -204,7 +204,7 @@ mod tests {
 
     /*
         //let picker_ctx = DirectionPicker::pick_context();
-        //picker_ctx.expect().times(1).in_sequence(&mut seq).returning(|_| Direction::Up);
+        //picker_ctx.expect().once().in_sequence(&mut seq).returning(|_| Direction::Up);
 */
 mod TestConditions{
 use crate::direction_picker::PickerCtx;
@@ -243,7 +243,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
     match tc.first_stage{
         TestConditions::FirstStage::Backward { way, picker_ctx } => {
         let alt_direction = way.alt_direction;
-        picker_ctx.expect().times(1).in_sequence(seq).returning(move |_| alt_direction);
+        picker_ctx.expect().once().in_sequence(seq).returning(move |_| alt_direction);
         direction_taken = way.alt_direction;
         target_tile =  way.alt_target_tile;
         target_position =  way.alt_target_position;
@@ -254,21 +254,25 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
         target_tile = way.alt_target_tile;
     }}
     
-    map.expect_get_neighbour_tile().times(1).in_sequence(seq)
+    map.expect_get_neighbour_tile().once().in_sequence(seq)
     .withf(move |position, direction| {*position == original_position && *direction == direction_taken} ).
     return_const(Some((target_tile, target_position)));
     
     if let Some(to_wall)= &tc.to_wall{
-        let index = 0;
-        let alt_direction = to_wall.ways[index].alt_direction;
-        to_wall.picker_ctx.expect().times(1).in_sequence(seq).returning(move |_| alt_direction);
-        direction_taken = to_wall.ways[index].alt_direction;
-        target_tile =  to_wall.ways[index].alt_target_tile;
-        target_position =  to_wall.ways[index].alt_target_position;
+        for way in to_wall.ways.iter(){
+            direction_taken = way.alt_direction;
+            target_tile =  way.alt_target_tile;
+            target_position =  way.alt_target_position;
+            to_wall.picker_ctx.expect().once().in_sequence(seq).returning(move |_| direction_taken);
+
+            map.expect_get_neighbour_tile().once().in_sequence(seq)
+            .withf(move |position, direction| {print!("{:?}, {:?}",position,direction); *position == original_position && *direction == direction_taken} ).
+            return_const(Some((target_tile, target_position)));
+        }
     }
 
     if let Some(_) = tc.separator{
-        event_sender.expect_send().times(1).in_sequence(seq).withf(move |board_event| {
+        event_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
             match board_event{
             BoardEvevents::ADD_HEAD { position, coming_from, parent_direction} => return true,
             _ => return false
@@ -276,7 +280,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
         }).return_const(Result::<(), SendError<BoardEvevents>>::Ok(()));
     }
 
-    map.expect_set_tile().times(1).in_sequence(seq)
+    map.expect_set_tile().once().in_sequence(seq)
     .withf(move |position, tile_type| {*position == target_position && *tile_type == TileType::Marked})
     .return_const(());
     
@@ -342,11 +346,11 @@ fn test_basic_moves(){
 
     test_move(&mut seq, &mut map, &mut event_sender, &tc2);
 
+    // Test 3: Chosen direction is refused because of a wall 
     let previous_way_3 = target_way_2;
-    let failed_target_way_3 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :10, y:11}, alt_target_tile : TileType::Free};
-    let target_way_3 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :9, y:11}, alt_target_tile : TileType::Free};
+    let failed_target_way_3 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :9, y:11}, alt_target_tile : TileType::Wall}; 
+    let target_way_3 = TestConditions::Way{alt_direction: Direction::Up, alt_target_position : Coordinates{x :10, y:12}, alt_target_tile : TileType::Free};
 
-    // Test 3: Chosen direction is refused because of a wall
     let tc3 = TestConditions::General{
         previous_way : previous_way_3,
         first_stage: TestConditions::FirstStage::NotBackward{way: failed_target_way_3},
@@ -360,7 +364,7 @@ fn test_basic_moves(){
     dispatch_head_evt(target_way_0.alt_direction, &mut map, &mut simple_head);
     dispatch_head_evt(target_way_1.alt_direction, &mut map, &mut simple_head);
     dispatch_head_evt(backward_way_2, &mut map, &mut simple_head);
-    dispatch_head_evt(target_way_3.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(failed_target_way_3.alt_direction, &mut map, &mut simple_head);
 
 }
 
