@@ -202,10 +202,6 @@ mod tests {
 
     use super::*;
 
-    /*
-        //let picker_ctx = DirectionPicker::pick_context();
-        //picker_ctx.expect().once().in_sequence(&mut seq).returning(|_| Direction::Up);
-*/
 mod TestConditions{
 use crate::direction_picker::PickerCtx;
 
@@ -222,15 +218,15 @@ pub struct General<'a>{
 pub struct Separator{}
 
 pub enum FirstStage<'a>{
-    NotBackward{way: Way},
-    Backward{way: Way, picker_ctx : &'a PickerCtx}
-
+    ValidDir{way: Way},
+    InvalidDir{way: Way, picker_ctx : &'a PickerCtx},
 }
 
 #[derive(Copy, Clone)]
 pub struct Way{pub alt_direction : Direction, pub alt_target_position : Coordinates, pub alt_target_tile : TileType}
 
 pub struct ToWall<'a>{pub ways: Vec<Way> ,pub picker_ctx : &'a PickerCtx}
+
 
 }
 
@@ -241,14 +237,14 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
     let mut target_tile;
 
     match tc.first_stage{
-        TestConditions::FirstStage::Backward { way, picker_ctx } => {
+        TestConditions::FirstStage::InvalidDir { way, picker_ctx } => {
         let alt_direction = way.alt_direction;
         picker_ctx.expect().once().in_sequence(seq).returning(move |_| alt_direction);
         direction_taken = way.alt_direction;
         target_tile =  way.alt_target_tile;
         target_position =  way.alt_target_position;
     },
-        TestConditions::FirstStage::NotBackward {way} =>{
+        TestConditions::FirstStage::ValidDir {way} =>{
         direction_taken = way.alt_direction;
         target_position = way.alt_target_position;
         target_tile = way.alt_target_tile;
@@ -311,7 +307,7 @@ fn test_basic_moves(){
 
     let tc0 = TestConditions::General{
         previous_way: previous_way_0,
-        first_stage: TestConditions::FirstStage::NotBackward{way: target_way_0},
+        first_stage: TestConditions::FirstStage::ValidDir{way: target_way_0},
         separator: None,
         to_wall: None
     };
@@ -324,7 +320,7 @@ fn test_basic_moves(){
 
     let tc1 = TestConditions::General{
         previous_way : previous_way_1,
-        first_stage: TestConditions::FirstStage::NotBackward{
+        first_stage: TestConditions::FirstStage::ValidDir{
             way: target_way_1},  
         separator: None,
         to_wall : None
@@ -339,7 +335,7 @@ fn test_basic_moves(){
     
     let tc2 = TestConditions::General{
         previous_way : previous_way_2,
-        first_stage: TestConditions::FirstStage::Backward{way: target_way_2 , picker_ctx: &picker_ctx},
+        first_stage: TestConditions::FirstStage::InvalidDir{way: target_way_2 , picker_ctx: &picker_ctx},
         separator: None,
         to_wall: None
     };
@@ -353,23 +349,38 @@ fn test_basic_moves(){
 
     let tc3 = TestConditions::General{
         previous_way : previous_way_3,
-        first_stage: TestConditions::FirstStage::NotBackward{way: failed_target_way_3},
+        first_stage: TestConditions::FirstStage::ValidDir{way: failed_target_way_3},
         separator: None,
         to_wall: Some(TestConditions::ToWall{ways: vec![target_way_3], picker_ctx: &picker_ctx})
     };
     test_move(&mut seq, &mut map, &mut event_sender, &tc3);
+    
+
+    // Test 4: Chosen direction refused because it's empty leads to move to free tile
+    let previous_way_4 = target_way_3;
+    let target_way_4 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :8, y:11}, alt_target_tile : TileType::Free};
+    
+    let tc4 = TestConditions::General{
+        previous_way : previous_way_4,
+        first_stage: TestConditions::FirstStage::InvalidDir{way: target_way_4 , picker_ctx: &picker_ctx},
+        separator: None,
+        to_wall: None
+    };
+    test_move(&mut seq, &mut map, &mut event_sender, &tc4);
+
 
     let mut simple_head = SimpleHead::new(0, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender);
 
-    dispatch_head_evt(target_way_0.alt_direction, &mut map, &mut simple_head);
-    dispatch_head_evt(target_way_1.alt_direction, &mut map, &mut simple_head);
-    dispatch_head_evt(backward_way_2, &mut map, &mut simple_head);
-    dispatch_head_evt(failed_target_way_3.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(Some(target_way_0.alt_direction), &mut map, &mut simple_head);
+    dispatch_head_evt(Some(target_way_1.alt_direction), &mut map, &mut simple_head);
+    dispatch_head_evt(Some(backward_way_2), &mut map, &mut simple_head);
+    dispatch_head_evt(Some(failed_target_way_3.alt_direction), &mut map, &mut simple_head);
+    dispatch_head_evt(None, &mut map, &mut simple_head);
 
 }
 
-fn dispatch_head_evt(head_going_to: Direction, map: &mut MockMap, simple_head: &mut SimpleHead) {
-    let event = HeadEvents::MOVE_HEAD { direction: Some(head_going_to), prohibited_directions : DirectionFlags::empty(),  map: map};
+fn dispatch_head_evt(head_going_to: Option<Direction>, map: &mut MockMap, simple_head: &mut SimpleHead) {
+    let event = HeadEvents::MOVE_HEAD { direction: head_going_to, prohibited_directions : DirectionFlags::empty(),  map: map};
     simple_head.dispatch(event);
 }
 
