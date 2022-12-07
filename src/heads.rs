@@ -200,6 +200,8 @@ mod tests {
     use crate::{map::{MockMap}, mpsc::MockSender};
     use crate::mpsc::SendError;
 
+    use self::TestConditions::Separator;
+
     use super::*;
 
 mod TestConditions{
@@ -232,7 +234,9 @@ pub struct ToWall<'a>{pub ways: Vec<Way> ,pub picker_ctx : &'a PickerCtx}
 
 fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut MockSender<BoardEvevents>, tc: &TestConditions::General){
     let original_position = tc.previous_way.alt_target_position;
-    let mut direction_taken;
+    let original_direction = tc.previous_way.alt_direction;
+
+    let mut target_direction;
     let mut target_position;
     let mut target_tile;
 
@@ -240,29 +244,29 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
         TestConditions::FirstStage::InvalidDir { way, picker_ctx } => {
         let alt_direction = way.alt_direction;
         picker_ctx.expect().once().in_sequence(seq).returning(move |_| alt_direction);
-        direction_taken = way.alt_direction;
+        target_direction = way.alt_direction;
         target_tile =  way.alt_target_tile;
         target_position =  way.alt_target_position;
     },
         TestConditions::FirstStage::ValidDir {way} =>{
-        direction_taken = way.alt_direction;
+        target_direction = way.alt_direction;
         target_position = way.alt_target_position;
         target_tile = way.alt_target_tile;
     }}
     
     map.expect_get_neighbour_tile().once().in_sequence(seq)
-    .withf(move |position, direction| {*position == original_position && *direction == direction_taken} ).
+    .withf(move |position, direction| {*position == original_position && *direction == target_direction} ).
     return_const(Some((target_tile, target_position)));
     
     if let Some(to_wall)= &tc.to_wall{
         for way in to_wall.ways.iter(){
-            direction_taken = way.alt_direction;
+            target_direction = way.alt_direction;
             target_tile =  way.alt_target_tile;
             target_position =  way.alt_target_position;
-            to_wall.picker_ctx.expect().once().in_sequence(seq).returning(move |_| direction_taken);
+            to_wall.picker_ctx.expect().once().in_sequence(seq).returning(move |_| target_direction);
 
             map.expect_get_neighbour_tile().once().in_sequence(seq)
-            .withf(move |position, direction| {print!("{:?}, {:?}",position,direction); *position == original_position && *direction == direction_taken} ).
+            .withf(move |position, direction| {print!("{:?}, {:?}",position,direction); *position == original_position && *direction == target_direction} ).
             return_const(Some((target_tile, target_position)));
         }
     }
@@ -270,7 +274,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
     if let Some(_) = tc.separator{
         event_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
             match board_event{
-            BoardEvevents::ADD_HEAD { position, coming_from, parent_direction} => return true,
+            BoardEvevents::ADD_HEAD { position, coming_from, parent_direction} => *position==original_position && *coming_from == original_direction.reverse() && *parent_direction==target_direction ,
             _ => return false
         }
         }).return_const(Result::<(), SendError<BoardEvevents>>::Ok(()));
@@ -356,9 +360,9 @@ fn test_basic_moves(){
     test_move(&mut seq, &mut map, &mut event_sender, &tc3);
     
 
-    // Test 4: Chosen direction refused because it's empty leads to move to free tile
+    // Test 4: Chosen direction refused because it's empty leads to move to Separator tile
     let previous_way_4 = target_way_3;
-    let target_way_4 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :8, y:11}, alt_target_tile : TileType::Free};
+    let target_way_4 = TestConditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :8, y:11}, alt_target_tile : TileType::Separator};
     
     let tc4 = TestConditions::General{
         previous_way : previous_way_4,
@@ -368,6 +372,18 @@ fn test_basic_moves(){
     };
     test_move(&mut seq, &mut map, &mut event_sender, &tc4);
 
+    // Test 5: Chosen direction leads to free tile
+    let previous_way_5 = target_way_4;
+    let target_way_5 = TestConditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:10}, alt_target_tile : TileType::Free};
+    
+    let tc5 = TestConditions::General{
+        previous_way : previous_way_5,
+        first_stage: TestConditions::FirstStage::ValidDir { way: target_way_5},
+        separator: Some(Separator {}),
+        to_wall: None
+    };
+    test_move(&mut seq, &mut map, &mut event_sender, &tc5);
+
 
     let mut simple_head = SimpleHead::new(0, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender);
 
@@ -376,6 +392,8 @@ fn test_basic_moves(){
     dispatch_head_evt(Some(backward_way_2), &mut map, &mut simple_head);
     dispatch_head_evt(Some(failed_target_way_3.alt_direction), &mut map, &mut simple_head);
     dispatch_head_evt(None, &mut map, &mut simple_head);
+    dispatch_head_evt(Some(target_way_5.alt_direction), &mut map, &mut simple_head);
+
 
 }
 
