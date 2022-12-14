@@ -35,12 +35,12 @@ mod private {
 
     pub trait Sealed {
         fn move_heads_handler(&mut self, direction: Option<Direction>);
+        fn kill_head_handler(&mut self, id: heads::Id);
     }
 }
 pub trait Board: private::Sealed {
     fn new(events_sender: Sender<BoardEvevents>, events_receiver: Receiver<BoardEvevents>);
     fn run(&mut self);
-    fn move_heads_handler(&mut self, direction: Option<Direction>);
 }
 
 impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
@@ -52,6 +52,10 @@ impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
             let move_head_event = HeadEvents::MOVE_HEAD { direction, prohibited_directions, map };
             head.dispatch(move_head_event);
         }
+    }
+
+    fn kill_head_handler(&mut self, id: heads::Id) {
+        self.heads.remove(id);
     }
 }
 
@@ -89,14 +93,16 @@ impl<MapType: Map> SimpleBoard<MapType> {
                 BoardEvevents::SET_NEXT_HEAD_DIRECTION { direction } => {
                     self.next_direction = direction
                 }
-                BoardEvevents::KILL_HEAD { id } => {}
+                BoardEvevents::KILL_HEAD { id } => {
+                    private::Sealed::kill_head_handler(self, id)
+                }
                 BoardEvevents::ADD_HEAD {
                     position,
                     coming_from,
                     parent_direction,
                 } => {
-                    let mut event = HeadEvents::MOVE_HEAD { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
                     let head = self.heads.add_head(position, coming_from, self.events_sender.clone());
+                    let event = HeadEvents::MOVE_HEAD { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
                     head.dispatch(event)
                 }
             }

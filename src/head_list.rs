@@ -25,20 +25,34 @@ impl <HeadType : Head> HeadList<HeadType>{
     pub fn add_head(&mut self,    
     position: Coordinates,
     coming_from: Direction,
-    events_sender: Sender<BoardEvevents>){
+    events_sender: Sender<BoardEvevents>)-> &mut HeadType{
+
+        let mut free_slot_pos : Option<usize> = None;
 
         // Try to put the head on an empty slot
         for (pos, head) in self.heads_vec.iter_mut().enumerate(){
             if let None = head {
                 let new_head = HeadType::new(pos as Id, position, coming_from, events_sender.clone());
                 head.replace(new_head);
-                return;
+                free_slot_pos = Some(pos);
+                break;
             }
         }
+        let new_slot_pos;
 
-        // If no slot is available, push the head on a new slot
-        let new_head = HeadType::new(self.heads_vec.len() as Id, position, coming_from, events_sender.clone());
-        self.heads_vec.push(Some(new_head));
+        if let Some(free_slot_pos) = free_slot_pos{
+            new_slot_pos = free_slot_pos;
+        }
+        
+        else{
+            // If no slot is available, push the head on a new slot
+            let new_head = HeadType::new(self.heads_vec.len() as Id, position, coming_from, events_sender.clone());
+            self.heads_vec.push(Some(new_head));
+            new_slot_pos = self.heads_vec.len() -1;
+        }
+        
+        self.heads_vec[new_slot_pos].as_mut().unwrap()
+
     }
 
     pub fn remove(&mut self, id_of_head_to_remove: Id){
