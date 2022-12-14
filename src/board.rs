@@ -73,7 +73,7 @@ impl<MapType: Map> SimpleBoard<MapType> {
         };
 
         let mut heads = HeadList::new();
-        heads.add_head(first_head_position,Direction::Down,events_sender.clone());
+        heads.add_head(first_head_position,Direction::Down,events_sender.clone(), &mut map);
         Self {
             map,
             heads,
@@ -101,7 +101,7 @@ impl<MapType: Map> SimpleBoard<MapType> {
                     coming_from,
                     parent_direction,
                 } => {
-                    let head = self.heads.add_head(position, coming_from, self.events_sender.clone());
+                    let head = self.heads.add_head(position, coming_from, self.events_sender.clone(), &mut self.map);
                     let event = HeadEvents::MOVE_HEAD { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
                     head.dispatch(event)
                 }

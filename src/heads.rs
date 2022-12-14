@@ -40,6 +40,7 @@ pub trait Head: private::Sealed {
         position: Coordinates,
         coming_from: Direction,
         events_sender: Sender<BoardEvevents>,
+        map : &impl Map
     ) -> Self;
     fn dispatch(&mut self, event: HeadEvents<impl Map>);
     fn get_id(&mut self) -> Id;
@@ -173,6 +174,7 @@ impl Head for SimpleHead {
         position: Coordinates,
         coming_from: Direction,
         events_sender: Sender<BoardEvevents>,
+        map : &impl Map
     ) -> SimpleHead { // TODO, initialize with map
         SimpleHead {
             id,
@@ -423,7 +425,7 @@ fn test_basic_moves(){
     };
     test_move(&mut seq, &mut map, &mut event_sender, &tc6);
 
-    let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender);
+    let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender, &mut map);
 
     dispatch_head_evt(Some(target_way_0.alt_direction), &mut map, &mut simple_head);
     dispatch_head_evt(Some(target_way_1.alt_direction), &mut map, &mut simple_head);
