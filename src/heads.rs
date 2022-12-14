@@ -40,8 +40,10 @@ pub trait Head: private::Sealed {
         position: Coordinates,
         coming_from: Direction,
         events_sender: Sender<BoardEvevents>,
-    ) -> SimpleHead;
+    ) -> Self;
     fn dispatch(&mut self, event: HeadEvents<impl Map>);
+    fn get_id(&mut self) -> Id;
+
 }
 mod private {
     use super::*;
@@ -165,10 +167,6 @@ impl private::Sealed for SimpleHead {
 
 }
 
-// TODO
-// - Separator
-// - random choice of dir
-//
 impl Head for SimpleHead {
     fn new(
         id: Id,
@@ -183,6 +181,10 @@ impl Head for SimpleHead {
             events_sender,
             head_split : false
         }
+    }
+
+    fn get_id(&mut self) -> Id{
+        self.id
     }
 
     fn dispatch(&mut self, event: HeadEvents<impl Map>) {
@@ -224,7 +226,7 @@ pub enum FirstStage<'a>{
 pub struct OnSeparator{}
 
 pub enum LastStage{
-    ToMarked{id : u32},
+    ToMarked{id : Id},
     ToFree
 }
 
@@ -301,8 +303,6 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut Mock
     };
 
 
-
-    
     
 }
 

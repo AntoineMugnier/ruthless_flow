@@ -1,14 +1,9 @@
+use crate::head_list::HeadList;
 use crate::heads::{self, Head, HeadAction, HeadEvents, SimpleHead};
 use crate::map::{Map, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use std::sync::mpsc::{Receiver};
 use crate::mpsc::Sender;
-
-//extern crate timer;
-
-type HeadsCell = Box<SimpleHead>;
-
-type HeadsVec = Vec<HeadsCell>;
 
 #[derive(Debug, Clone)]
 pub enum BoardEvevents {
@@ -29,7 +24,7 @@ pub enum BoardEvevents {
 
 pub struct SimpleBoard<MapType: Map> {
     map: MapType,
-    heads: HeadsVec,
+    heads: HeadList<SimpleHead>,
     events_receiver: Receiver<BoardEvevents>,
     events_sender: Sender<BoardEvevents>,
     next_direction: Option<Direction>,
@@ -73,15 +68,8 @@ impl<MapType: Map> SimpleBoard<MapType> {
             y: 0,
         };
 
-        let first_head = SimpleHead::new(
-            0,
-            first_head_position,
-            Direction::Down,
-            events_sender.clone(),
-        );
-
-        let heads = vec![Box::new(first_head)];
-
+        let mut heads = HeadList::new();
+        heads.add_head(first_head_position,Direction::Down,events_sender.clone());
         Self {
             map,
             heads,
@@ -106,7 +94,11 @@ impl<MapType: Map> SimpleBoard<MapType> {
                     position,
                     coming_from,
                     parent_direction,
-                } => {}
+                } => {
+                    let mut event = HeadEvents::MOVE_HEAD { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
+                    let head = self.heads.add_head(position, coming_from, self.events_sender.clone());
+                    head.dispatch(event)
+                }
             }
         }
     }
