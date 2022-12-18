@@ -23,6 +23,7 @@ pub trait Map {
     ) -> Option<(TileType, Coordinates)>;
     fn get_length(&self) -> usize;
     fn get_height(&self) -> usize;
+    fn slide(&mut self);
 }
 
 pub struct SimpleMap {
@@ -63,6 +64,10 @@ impl Map for SimpleMap {
                 ],
             ]),
         }
+    }
+
+    fn slide(&mut self){
+
     }
 
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
