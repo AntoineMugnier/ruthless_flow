@@ -5,6 +5,8 @@ use crate::utils::{Coordinates, Direction, DirectionFlags};
 use std::sync::mpsc::{Receiver};
 use crate::mpsc::Sender;
 
+use self::private::Sealed;
+
 #[derive(Debug, Clone)]
 pub enum BoardEvevents {
     SLIDE_FRAME_TICK,
@@ -36,6 +38,8 @@ mod private {
     pub trait Sealed {
         fn move_heads_handler(&mut self, direction: Option<Direction>);
         fn kill_head_handler(&mut self, id: heads::Id);
+        fn set_next_head_direction(&mut self, direction: Option<Direction>);
+        fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction);
     }
 }
 pub trait Board: private::Sealed {
@@ -57,6 +61,17 @@ impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
     fn kill_head_handler(&mut self, id: heads::Id) {
         self.heads.remove(id);
     }
+
+    fn set_next_head_direction(&mut self, direction: Option<Direction>) {
+        self.next_direction = direction
+    }
+    
+    fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {
+        let head = self.heads.add_head(position, coming_from, self.events_sender.clone());
+        let event = HeadEvents::MOVE_HEAD { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
+        head.dispatch(event);
+    }
+
 }
 
 impl<MapType: Map> SimpleBoard<MapType> {
@@ -83,29 +98,29 @@ impl<MapType: Map> SimpleBoard<MapType> {
         }
     }
 
+
     pub fn run(&mut self) {
         while let Ok(evt) = self.events_receiver.recv() {
             match evt {
                 BoardEvevents::SLIDE_FRAME_TICK => (),
                 BoardEvevents::MOVE_HEADS_TICK => {
-                    private::Sealed::move_heads_handler(self, self.next_direction)
+                    self.move_heads_handler(self.next_direction);
                 }
                 BoardEvevents::SET_NEXT_HEAD_DIRECTION { direction } => {
-                    self.next_direction = direction
+                    self.set_next_head_direction(direction);
                 }
                 BoardEvevents::KILL_HEAD { id } => {
-                    private::Sealed::kill_head_handler(self, id)
+                    self.kill_head_handler(id);
                 }
                 BoardEvevents::ADD_HEAD {
                     position,
                     coming_from,
                     parent_direction,
                 } => {
-                    let head = self.heads.add_head(position, coming_from, self.events_sender.clone());
-                    let event = HeadEvents::MOVE_HEAD { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
-                    head.dispatch(event)
+                    self.add_head_handler(position, coming_from, parent_direction);
                 }
             }
         }
     }
+
 }
