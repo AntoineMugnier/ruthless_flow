@@ -4,7 +4,8 @@ use crate::map::{Map, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use std::sync::mpsc::{Receiver};
 use crate::mpsc::Sender;
-
+use std::thread;
+use std::time::Duration;
 use self::private::Sealed;
 
 #[derive(Debug, Clone)]
@@ -43,7 +44,7 @@ mod private {
     }
 }
 pub trait Board: private::Sealed {
-    fn new(events_sender: Sender<BoardEvevents>, events_receiver: Receiver<BoardEvevents>);
+    fn new(events_sender: Sender<BoardEvevents>, events_receiver: Receiver<BoardEvevents>)-> Self;
     fn run(&mut self);
 }
 
@@ -74,8 +75,8 @@ impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
 
 }
 
-impl<MapType: Map> SimpleBoard<MapType> {
-    pub fn new(
+impl <MapType: Map> Board for SimpleBoard<MapType>{
+    fn new(
         events_sender: Sender<BoardEvevents>,
         events_receiver: Receiver<BoardEvevents>,
     ) -> Self {
@@ -89,6 +90,9 @@ impl<MapType: Map> SimpleBoard<MapType> {
 
         let mut heads = HeadList::new();
         heads.add_head(first_head_position,Direction::Down,events_sender.clone());
+
+
+
         Self {
             map,
             heads,
@@ -99,7 +103,7 @@ impl<MapType: Map> SimpleBoard<MapType> {
     }
 
 
-    pub fn run(&mut self) {
+    fn run(&mut self) {
         while let Ok(evt) = self.events_receiver.recv() {
             match evt {
                 BoardEvevents::SLIDE_FRAME_TICK => (),
@@ -122,5 +126,5 @@ impl<MapType: Map> SimpleBoard<MapType> {
             }
         }
     }
-
 }
+
