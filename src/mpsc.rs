@@ -1,19 +1,21 @@
-use mockall::mock;
 
 
-#[cfg(not(test))]
-pub type Sender<T> = std::sync::mpsc::Sender<T>;
-
-#[cfg(not(test))]
-pub use std::sync::mpsc::{SendError};
 
 pub use std::sync::mpsc::{Receiver, channel};
 
 #[cfg(test)]
+pub use test::*;
+
+#[cfg(not(test))]
+pub use production::*;
+
+#[cfg(test)]
+mod test{
+use mockall::mock;
+
 #[derive(Debug, Clone)]
 pub struct SendError<T>{phantom_data: core::marker::PhantomData<T>}
 
-#[cfg(test)]
 pub type Sender<T> = MockSender<T>;
 
 mock! {
@@ -25,3 +27,12 @@ mock! {
         fn clone(&self) -> Self;
     }
 }
+}
+
+#[cfg(not(test))]
+mod production{
+    pub use std::sync::mpsc::{SendError, Sender};
+}
+
+
+
