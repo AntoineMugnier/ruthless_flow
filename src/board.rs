@@ -31,6 +31,8 @@ pub struct SimpleBoard<MapType: Map> {
     events_receiver: Receiver<BoardEvevents>,
     events_sender: Sender<BoardEvevents>,
     next_direction: Option<Direction>,
+    move_heads_timer_h: std::thread::JoinHandle<()>
+    
 }
 
 mod private {
@@ -89,9 +91,17 @@ impl <MapType: Map> Board for SimpleBoard<MapType>{
         };
 
         let mut heads = HeadList::new();
-        heads.add_head(first_head_position,Direction::Down,events_sender.clone());
+        heads.add_head(first_head_position,Direction::Down, events_sender.clone());
 
-
+        // Spawn the thread that will trigger MOVE_HEADS_TICK every second
+        let event_sender_clone = events_sender.clone();
+        let move_heads_timer_h = thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_secs(1));
+            let event = BoardEvevents::MOVE_HEADS_TICK{};
+            event_sender_clone.send(event).unwrap();
+            }
+        });
 
         Self {
             map,
@@ -99,6 +109,7 @@ impl <MapType: Map> Board for SimpleBoard<MapType>{
             events_sender,
             events_receiver,
             next_direction: None,
+            move_heads_timer_h
         }
     }
 
