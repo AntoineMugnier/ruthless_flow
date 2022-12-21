@@ -1,3 +1,8 @@
+use std::sync::mpsc::channel;
+
+use board::{Board, SimpleBoard};
+use map::SimpleMap;
+
 mod board;
 mod heads;
 mod map;
@@ -7,5 +12,7 @@ mod direction_picker;
 mod head_list;
 mod mpsc;
 fn main() {
-    //let board = board::SimpleBoard::new();
+    let (sender, receiver) = channel();
+    let mut board: SimpleBoard<SimpleMap>  = board::SimpleBoard::new(sender.clone(), receiver);
+    board.run();
 }

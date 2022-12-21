@@ -1,10 +1,13 @@
 use mockall::mock;
 
+
 #[cfg(not(test))]
 pub type Sender<T> = std::sync::mpsc::Sender<T>;
 
 #[cfg(not(test))]
-use std::sync::mpsc::{SendError};
+pub use std::sync::mpsc::{SendError};
+
+pub use std::sync::mpsc::{Receiver, channel};
 
 #[cfg(test)]
 #[derive(Debug, Clone)]

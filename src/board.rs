@@ -2,8 +2,7 @@ use crate::head_list::HeadList;
 use crate::heads::{self, Head, HeadAction, HeadEvents, SimpleHead};
 use crate::map::{Map, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
-use std::sync::mpsc::{Receiver};
-use crate::mpsc::Sender;
+use crate::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 use self::private::Sealed;
@@ -97,9 +96,9 @@ impl <MapType: Map> Board for SimpleBoard<MapType>{
         let event_sender_clone = events_sender.clone();
         let move_heads_timer_h = thread::spawn(move || {
         loop {
-            thread::sleep(Duration::from_secs(1));
             let event = BoardEvevents::MOVE_HEADS_TICK{};
             event_sender_clone.send(event).unwrap();
+            thread::sleep(Duration::from_secs(1));
             }
         });
 
