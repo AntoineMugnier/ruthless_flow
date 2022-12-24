@@ -24,32 +24,16 @@ pub enum BoardEvevents {
     },
 }
 
-pub struct SimpleBoard<MapType: Map> {
+pub struct Board<MapType: Map> {
     map: MapType,
     heads: HeadList<SimpleHead>,
     events_receiver: Receiver<BoardEvevents>,
     events_sender: Sender<BoardEvevents>,
     next_direction: Option<Direction>,
     move_heads_timer_h: std::thread::JoinHandle<()>
-    
 }
 
-mod private {
-    use super::*;
-
-    pub trait Sealed {
-        fn move_heads_handler(&mut self, direction: Option<Direction>);
-        fn kill_head_handler(&mut self, id: heads::Id);
-        fn set_next_head_direction(&mut self, direction: Option<Direction>);
-        fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction);
-    }
-}
-pub trait Board: private::Sealed {
-    fn new(events_sender: Sender<BoardEvevents>, events_receiver: Receiver<BoardEvevents>)-> Self;
-    fn run(&mut self);
-}
-
-impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
+impl <MapType: Map> Board<MapType>{
     fn move_heads_handler(&mut self, direction: Option<Direction>) {
         let map = &mut self.map;
 
@@ -74,9 +58,7 @@ impl<MapType: Map> private::Sealed for SimpleBoard<MapType> {
         head.dispatch(event);
     }
 
-}
 
-impl <MapType: Map> Board for SimpleBoard<MapType>{
     fn new(
         events_sender: Sender<BoardEvevents>,
         events_receiver: Receiver<BoardEvevents>,
@@ -137,4 +119,3 @@ impl <MapType: Map> Board for SimpleBoard<MapType>{
         }
     }
 }
-
