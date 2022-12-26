@@ -1,5 +1,4 @@
-use mockall::automock;
-use std::{collections::VecDeque, iter::Cycle, result::Iter, slice};
+use std::{collections::VecDeque};
 
 use super::utils::{Coordinates, Direction};
 

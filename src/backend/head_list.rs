@@ -1,4 +1,4 @@
-use std::{ops::{Deref, DerefMut}, iter::FilterMap};
+use std::iter::FilterMap;
 
 use super::heads::{Head, Id};
 use super::utils::{Coordinates, Direction};
@@ -15,11 +15,13 @@ impl <HeadType : Head> HeadList<HeadType>{
         HeadList{heads_vec}
     }
     
+    #[allow(dead_code)]
     pub fn iter_mut(&mut self) -> FilterMap<std::slice::IterMut<'_, Option<HeadType>>, for<'r> fn(&'r mut Option<HeadType>) -> Option<&'r mut HeadType>> {
         let filtering_fn : fn(&mut Option<HeadType>) -> Option<&mut HeadType> = |x : &mut Option<HeadType>| if let Some(head) = x {Some(head)} else {None};
         self.heads_vec.iter_mut().filter_map(filtering_fn)
     }
 
+    #[allow(dead_code)]
     pub fn iter(&mut self) -> FilterMap<std::slice::Iter<'_, Option<HeadType>>, for<'r> fn(&'r Option<HeadType>) -> Option<&'r HeadType>> {
         let filtering_fn : fn(& Option<HeadType>) -> Option<& HeadType> = |x : & Option<HeadType>| if let Some(head) = x {Some(head)} else {None};
         self.heads_vec.iter().filter_map(filtering_fn)
