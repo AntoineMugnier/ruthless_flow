@@ -1,11 +1,11 @@
-use crate::head_list::HeadList;
-use crate::heads::{self, Head, HeadAction, HeadEvents, SimpleHead};
-use crate::map::{Map, TileType};
-use crate::utils::{Coordinates, Direction, DirectionFlags};
+use super::head_list::HeadList;
+use super::heads::{self, Head, HeadAction, HeadEvents, SimpleHead};
+use super::map::{MapTrait, TileType};
+use super::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
-use self::private::Sealed;
+
 
 #[derive(Debug, Clone)]
 pub enum BoardEvevents {
@@ -24,7 +24,7 @@ pub enum BoardEvevents {
     },
 }
 
-pub struct Board<MapType: Map> {
+pub struct Board<MapType: MapTrait> {
     map: MapType,
     heads: HeadList<SimpleHead>,
     events_receiver: Receiver<BoardEvevents>,
@@ -33,7 +33,7 @@ pub struct Board<MapType: Map> {
     move_heads_timer_h: std::thread::JoinHandle<()>
 }
 
-impl <MapType: Map> Board<MapType>{
+impl <MapType: MapTrait> Board<MapType>{
     fn move_heads_handler(&mut self, direction: Option<Direction>) {
         let map = &mut self.map;
 
@@ -58,8 +58,7 @@ impl <MapType: Map> Board<MapType>{
         head.dispatch(event);
     }
 
-
-    fn new(
+    pub fn new(
         events_sender: Sender<BoardEvevents>,
         events_receiver: Receiver<BoardEvevents>,
     ) -> Self {
@@ -95,7 +94,7 @@ impl <MapType: Map> Board<MapType>{
     }
 
 
-    fn run(&mut self) {
+    pub fn run(&mut self) {
         while let Ok(evt) = self.events_receiver.recv() {
             match evt {
                 BoardEvevents::SLIDE_FRAME_TICK => (),

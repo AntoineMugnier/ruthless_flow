@@ -1,7 +1,7 @@
 
 
 
-pub use std::sync::mpsc::{Receiver, channel};
+pub use std::sync::mpsc::{Receiver};
 
 #[cfg(test)]
 pub use test::*;
@@ -22,7 +22,7 @@ mock! {
     pub Sender<T>{
         pub fn send(&self, t: T) -> Result<(), SendError<T>>;
     }
-
+        
     impl <T> Clone for Sender<T>{
         fn clone(&self) -> Self;
     }
@@ -31,7 +31,7 @@ mock! {
 
 #[cfg(not(test))]
 mod production{
-    pub use std::sync::mpsc::{SendError, Sender};
+    pub use std::sync::mpsc::{SendError, Sender, channel};
 }
 
 

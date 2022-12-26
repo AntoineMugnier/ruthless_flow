@@ -1,18 +1,15 @@
-use std::sync::mpsc::channel;
+mod backend;
+use crate::backend::board::Board;
+pub use backend::map::*;
 
-use board::Board;
-use map::SimpleMap;
-
-mod board;
-mod heads;
-mod map;
-mod state_machine;
-mod utils;
-mod direction_picker;
-mod head_list;
 mod mpsc;
+
+#[cfg(not(test))]
+use crate::mpsc::{channel};
+
+#[cfg(not(test))]
 fn main() {
-//    let (sender, receiver) = channel();
-//    let mut board: SimpleBoard<SimpleMap>  = board::SimpleBoard::new(sender.clone(), receiver);
-//    board.run();
+    let (sender, receiver) = channel();
+    let mut board: Board<Map>  = Board::new(sender.clone(), receiver);
+    board.run();
 }

@@ -2,15 +2,15 @@ use enumflags2::{make_bitflags, BitFlag};
 use std::cell::{RefCell, UnsafeCell};
 use std::u8;
 
-use crate::board::BoardEvevents;
-use crate::direction_picker::DirectionPicker;
+use super::board::BoardEvevents;
+use super::direction_picker::DirectionPicker;
 use crate::mpsc::Sender;
-use crate::map::{Map, TileType};
-use crate::utils::{Coordinates, Direction, DirectionFlags};
+use super::map::{MapTrait, TileType};
+use super::utils::{Coordinates, Direction, DirectionFlags};
 use rand::{thread_rng, Rng};
 
 
-pub enum HeadEvents<'a, MapType: Map> {
+pub enum HeadEvents<'a, MapType: MapTrait> {
     MOVE_HEAD {
         direction: Option<Direction>,
         prohibited_directions : DirectionFlags, // bitfield to hold already explored or forbidden directions
@@ -41,7 +41,7 @@ pub trait Head: private::Sealed {
         coming_from: Direction,
         events_sender: Sender<BoardEvevents>,
     ) -> Self;
-    fn dispatch(&mut self, event: HeadEvents<impl Map>);
+    fn dispatch(&mut self, event: HeadEvents<impl MapTrait>);
     fn get_id(&mut self) -> Id;
 
 }
@@ -53,14 +53,14 @@ mod private {
         fn set_provenance(&mut self, coming_from: Direction);
         fn get_position(&self) -> Coordinates;
         fn get_provenance(&self) -> Direction;
-        fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl Map);
+        fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl MapTrait);
         fn explore_direction(
             position: Coordinates,
             chosen_direction: Direction,
             prohibited_directions: &mut DirectionFlags,
-            map: &mut impl Map,
+            map: &mut impl MapTrait,
         ) -> (Direction, TileType, Coordinates);
-        fn move_and_mark_tile(&mut self, map: &mut impl Map, target_position: Coordinates, chosen_direction: Direction);
+        fn move_and_mark_tile(&mut self, map: &mut impl MapTrait, target_position: Coordinates, chosen_direction: Direction);
     }
 }
 
@@ -81,13 +81,13 @@ impl private::Sealed for SimpleHead {
         self.coming_from
     }
 
-    fn move_and_mark_tile(&mut self, map: &mut impl Map, target_position: Coordinates, chosen_direction: Direction) {
+    fn move_and_mark_tile(&mut self, map: &mut impl MapTrait, target_position: Coordinates, chosen_direction: Direction) {
         map.set_tile(target_position, TileType::Marked);
         self.set_position(target_position);
         self.set_provenance(chosen_direction.reverse());
     }
 
-    fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl Map) {
+    fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl MapTrait) {
 
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from); 
@@ -144,7 +144,7 @@ impl private::Sealed for SimpleHead {
         original_position: Coordinates,
         chosen_direction: Direction,
         prohibited_directions: &mut DirectionFlags,
-        map: &mut impl Map,
+        map: &mut impl MapTrait,
     ) -> (Direction, TileType, Coordinates) {
 
         if let Some((tile_type, target_position)) = map.get_neighbour_tile(original_position, chosen_direction) {
@@ -187,7 +187,7 @@ impl Head for SimpleHead {
         self.id
     }
 
-    fn dispatch(&mut self, event: HeadEvents<impl Map>) {
+    fn dispatch(&mut self, event: HeadEvents<impl MapTrait>) {
         match event {
             HeadEvents::MOVE_HEAD { direction, prohibited_directions, map } => {
                 private::Sealed::move_head_handler(self, direction,prohibited_directions, map)
@@ -199,13 +199,13 @@ impl Head for SimpleHead {
 #[cfg(test)]
 mod tests {
     use mockall::{predicate, Sequence, mock};
-    use crate::{map::{MockMap}, mpsc::MockSender};
-    use crate::mpsc::SendError;
+    use super::super::map::MockMapTrait;
+    use crate::mpsc::{MockSender, SendError};
 
     use super::*;
 
 mod TestConditions{
-use crate::direction_picker::PickerCtx;
+use super::super::super::direction_picker::PickerCtx;
 
 use super::*;
 
@@ -238,7 +238,7 @@ pub struct ToWall<'a>{pub ways: Vec<Way> ,pub picker_ctx : &'a PickerCtx}
 
 }
 
-fn test_move(seq : & mut Sequence, map: & mut  MockMap, event_sender : &mut MockSender<BoardEvevents>, tc: &TestConditions::General){
+fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, event_sender : &mut MockSender<BoardEvevents>, tc: &TestConditions::General){
     let original_position = tc.previous_way.alt_target_position;
     let original_direction = tc.previous_way.alt_direction;
 
@@ -319,10 +319,9 @@ fn test_basic_moves(){
 
         
     let mut seq = Sequence::new();
-    let mut map = MockMap::default();
+    let mut map = MockMapTrait::default();
     let mut event_sender = Sender::default();
     let picker_ctx  = DirectionPicker::pick_context();
-
     // Test 0, Starting on Free Tile, normal move to free tile with chosen direction accepted
 
     let previous_way_0 = TestConditions::Way{alt_direction: Direction::Up, alt_target_position :Coordinates{x :10, y:10}, alt_target_tile : TileType::Marked};
@@ -436,7 +435,7 @@ fn test_basic_moves(){
 
 }
 
-fn dispatch_head_evt(head_going_to: Option<Direction>, map: &mut MockMap, simple_head: &mut SimpleHead) {
+fn dispatch_head_evt(head_going_to: Option<Direction>, map: &mut MockMapTrait, simple_head: &mut SimpleHead) {
     let event = HeadEvents::MOVE_HEAD { direction: head_going_to, prohibited_directions : DirectionFlags::empty(),  map: map};
     simple_head.dispatch(event);
 }

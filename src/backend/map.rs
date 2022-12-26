@@ -1,7 +1,7 @@
 use mockall::automock;
 use std::{collections::VecDeque, iter::Cycle, result::Iter, slice};
 
-use crate::utils::{Coordinates, Direction};
+use super::utils::{Coordinates, Direction};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
@@ -12,7 +12,7 @@ pub enum TileType {
 }
 
 #[cfg_attr(test, mockall::automock)]
-pub trait Map {
+pub trait MapTrait {
     fn new() -> Self;
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType);
     fn get_tile(&mut self, position: Coordinates) -> TileType;
@@ -26,13 +26,13 @@ pub trait Map {
     fn slide(&mut self);
 }
 
-pub struct SimpleMap {
+pub struct Map {
     pub sto: VecDeque<Vec<TileType>>,
 }
-impl SimpleMap {}
-impl Map for SimpleMap {
+impl Map {}
+impl MapTrait for Map {
     fn new() -> Self {
-        SimpleMap {
+        Map {
             sto: VecDeque::from([
                 vec![
                     TileType::Free,

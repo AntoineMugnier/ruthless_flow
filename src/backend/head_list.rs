@@ -1,6 +1,9 @@
 use std::{ops::{Deref, DerefMut}, iter::FilterMap};
 
-use crate::{heads::{Head, Id}, utils::{Coordinates, Direction}, mpsc::Sender, board::BoardEvevents};
+use super::heads::{Head, Id};
+use super::utils::{Coordinates, Direction};
+use crate::mpsc::Sender;
+use super::board::BoardEvevents;
 
 pub struct HeadList<HeadType: Head>{
     heads_vec: Vec<Option<HeadType>>
