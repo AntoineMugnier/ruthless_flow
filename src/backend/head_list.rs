@@ -3,7 +3,7 @@ use std::iter::FilterMap;
 use super::heads::{Head, Id};
 use super::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
-use super::board::BoardEvevents;
+use super::board;
 
 pub struct HeadList<HeadType: Head>{
     heads_vec: Vec<Option<HeadType>>
@@ -30,7 +30,7 @@ impl <HeadType : Head> HeadList<HeadType>{
     pub fn add_head(&mut self,    
     position: Coordinates,
     coming_from: Direction,
-    events_sender: Sender<BoardEvevents>)-> &mut HeadType{
+    events_sender: Sender<board::Events>)-> &mut HeadType{
 
         let mut free_slot_pos : Option<usize> = None;
 

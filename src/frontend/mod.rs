@@ -2,21 +2,20 @@ extern crate piston_window;
 
 use piston_window::*;
 
-use crate::{mpsc::{Sender, Receiver}, backend::board::BoardEvevents};
+use crate::{mpsc::{Sender, Receiver}, backend::board};
 
-pub enum FrontendEvents {
+pub enum Events {
     
 }
 pub struct Frontend{
     window: PistonWindow,
-    backend_sender: Sender<BoardEvevents>,
-    frontend_receiver: Receiver<FrontendEvents>,
+    backend_sender: Sender<board::Events>,
+    frontend_receiver: Receiver<Events>,
 
 }
-
 impl Frontend{
 
-    pub fn new(backend_sender: Sender<BoardEvevents>, frontend_receiver: Receiver<FrontendEvents>
+    pub fn new(backend_sender: Sender<board::Events>, frontend_receiver: Receiver<Events>
     ) -> Frontend{
         
         let mut window: PistonWindow = 

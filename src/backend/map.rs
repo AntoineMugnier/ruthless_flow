@@ -1,7 +1,8 @@
 use std::{collections::VecDeque};
 
 use super::utils::{Coordinates, Direction};
-
+use crate::mpsc::Sender;
+use crate::frontend;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
     Marked,
@@ -12,7 +13,7 @@ pub enum TileType {
 
 #[cfg_attr(test, mockall::automock)]
 pub trait MapTrait {
-    fn new() -> Self;
+    fn new(frontend_sender: Sender<frontend::Events>) -> Self;
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType);
     fn get_tile(&mut self, position: Coordinates) -> TileType;
     fn get_neighbour_tile(
@@ -27,10 +28,12 @@ pub trait MapTrait {
 
 pub struct Map {
     pub sto: VecDeque<Vec<TileType>>,
+    frontend_sender: Sender<frontend::Events>
 }
 impl Map {}
 impl MapTrait for Map {
-    fn new() -> Self {
+    fn new(frontend_sender: Sender<frontend::Events>
+    ) -> Self {
         Map {
             sto: VecDeque::from([
                 vec![
@@ -62,6 +65,7 @@ impl MapTrait for Map {
                     TileType::Free,
                 ],
             ]),
+            frontend_sender
         }
     }
 

@@ -15,9 +15,11 @@ fn main() {
     let (backend_sender, backend_receiver) = channel();
     let (frontend_sender, frontend_receiver) = channel();
 
-    let backend_sender_clone = backend_sender.clone();
+    let  map = Map::new(frontend_sender);
+
+    let backend_sender_clone = backend_sender.clone(); // For the Board to post events to itself
     thread::spawn(move || {
-            let mut board: Board<Map>  = Board::new(frontend_sender, backend_sender_clone, backend_receiver);
+            let mut board: Board<Map>  = Board::new(map, backend_sender_clone, backend_receiver);
             board.run();
         });
 
