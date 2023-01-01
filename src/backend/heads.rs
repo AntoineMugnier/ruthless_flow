@@ -15,7 +15,6 @@ pub enum HeadEvents<'a, MapType: MapTrait> {
 }
 pub type Id = u32;
 
-
 pub struct SimpleHead {
     id: Id,
     position: Coordinates,

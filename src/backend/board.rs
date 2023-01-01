@@ -5,7 +5,7 @@ use super::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
-
+use crate::frontend::FrontendEvents;
 
 #[derive(Debug, Clone)]
 pub enum BoardEvevents {
@@ -27,6 +27,7 @@ pub enum BoardEvevents {
 pub struct Board<MapType: MapTrait> {
     map: MapType,
     heads: HeadList<SimpleHead>,
+    frontend_sender : Sender<FrontendEvents>, 
     events_receiver: Receiver<BoardEvevents>,
     events_sender: Sender<BoardEvevents>,
     next_direction: Option<Direction>,
@@ -59,6 +60,7 @@ impl <MapType: MapTrait> Board<MapType>{
     }
 
     pub fn new(
+        frontend_sender : Sender<FrontendEvents>, 
         events_sender: Sender<BoardEvevents>,
         events_receiver: Receiver<BoardEvevents>,
     ) -> Self {
@@ -86,6 +88,7 @@ impl <MapType: MapTrait> Board<MapType>{
         Self {
             map,
             heads,
+            frontend_sender,
             events_sender,
             events_receiver,
             next_direction: None,
