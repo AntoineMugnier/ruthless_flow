@@ -9,13 +9,12 @@ pub enum Events {
 }
 pub struct Frontend{
     window: PistonWindow,
-    backend_sender: Sender<board::Events>,
-    frontend_receiver: Receiver<Events>,
-
+    backend_event_sender: Sender<board::Events>,
+    frontend_event_receiver: Receiver<Events>
 }
 impl Frontend{
 
-    pub fn new(backend_sender: Sender<board::Events>, frontend_receiver: Receiver<Events>
+    pub fn new(backend_event_sender: Sender<board::Events>, frontend_event_receiver: Receiver<Events>
     ) -> Frontend{
         
         let mut window: PistonWindow = 
@@ -23,7 +22,7 @@ impl Frontend{
             .exit_on_esc(true).build().unwrap();
 
             
-        Frontend {window, backend_sender, frontend_receiver}
+        Frontend {window, backend_event_sender, frontend_event_receiver}
     }
 
     pub fn run(&mut self) {
@@ -38,8 +37,13 @@ impl Frontend{
                               c.transform, g);
                 });
             }
-    
+            
             if let Some(ref args) = e.update_args() {
+                while let Ok(evt) = self.frontend_event_receiver.recv() {
+                    match evt {
+
+                    }
+                }
             }
     
             if let Some(ref args) = e.press_args() {
