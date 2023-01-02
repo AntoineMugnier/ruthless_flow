@@ -1,7 +1,7 @@
 use std::iter::FilterMap;
 
 use super::heads::{Head, Id};
-use super::utils::{Coordinates, Direction};
+use crate::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
 use super::board;
 

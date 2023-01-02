@@ -1,6 +1,5 @@
 use std::{collections::VecDeque};
-
-use super::utils::{Coordinates, Direction};
+use crate::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
 use crate::frontend;
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -13,7 +12,7 @@ pub enum TileType {
 
 #[cfg_attr(test, mockall::automock)]
 pub trait MapTrait {
-    fn new(frontend_sender: Sender<frontend::Events>) -> Self;
+    fn new(frontend_sender: Sender<frontend::Event>, sto: VecDeque<Vec<TileType>>) -> Self;
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType);
     fn get_tile(&mut self, position: Coordinates) -> TileType;
     fn get_neighbour_tile(
@@ -28,44 +27,17 @@ pub trait MapTrait {
 
 pub struct Map {
     pub sto: VecDeque<Vec<TileType>>,
-    frontend_sender: Sender<frontend::Events>
+    frontend_sender: Sender<frontend::Event>
 }
 impl Map {}
 impl MapTrait for Map {
-    fn new(frontend_sender: Sender<frontend::Events>
+    fn new(
+        frontend_sender: Sender<frontend::Event>, 
+        sto: VecDeque<Vec<TileType>>
     ) -> Self {
         Map {
-            sto: VecDeque::from([
-                vec![
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                ],
-                vec![
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                ],
-                vec![
-                    TileType::Free,
-                    TileType::Wall,
-                    TileType::Wall,
-                    TileType::Wall,
-                    TileType::Free,
-                ],
-                vec![
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                    TileType::Free,
-                ],
-            ]),
-            frontend_sender
+            frontend_sender,
+            sto
         }
     }
 

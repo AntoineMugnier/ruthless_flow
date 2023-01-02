@@ -3,7 +3,7 @@ use super::board;
 use super::direction_picker::DirectionPicker;
 use crate::mpsc::Sender;
 use super::map::{MapTrait, TileType};
-use super::utils::{Coordinates, Direction, DirectionFlags};
+use crate::utils::{Coordinates, Direction, DirectionFlags};
 
 
 pub enum Events<'a, MapType: MapTrait> {

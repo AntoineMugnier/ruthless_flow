@@ -8,7 +8,7 @@ pub type PickerCtx = private::__mock_MockDirectionPicker::__pick::Context;
 
 mod private{
     use rand::{thread_rng, Rng};
-    use super::super::utils::{DirectionFlags, Direction};
+    use crate::utils::{DirectionFlags, Direction};
     
 
     pub struct DirectionPicker{}

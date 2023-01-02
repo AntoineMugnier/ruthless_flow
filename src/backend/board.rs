@@ -1,7 +1,7 @@
 use super::head_list::HeadList;
 use super::heads::{self, Head, SimpleHead};
 use super::map::{MapTrait};
-use super::utils::{Coordinates, Direction, DirectionFlags};
+use crate::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
