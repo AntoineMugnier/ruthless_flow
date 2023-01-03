@@ -1,6 +1,5 @@
 extern crate piston_window;
 pub mod gfx_map;
-use std::collections::VecDeque;
 
 use piston_window::*;
 
@@ -37,10 +36,7 @@ impl Frontend{
             
             if let Some(ref args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, _device| {
-                    clear([1.0; 4], g);
-                    rectangle([1.0, 0.0, 0.0, 1.0], // red
-                              [0.0, 0.0, 100.0, 100.0],
-                              c.transform, g);
+                    self.gfx_map.render(&c, g);
                 });
             }
             
@@ -57,7 +53,7 @@ impl Frontend{
                 }
             }
     
-            if let Some(ref args) = e.press_args() {
+            if let Some(ref args) = e.press_args() {    
             }
 
             
