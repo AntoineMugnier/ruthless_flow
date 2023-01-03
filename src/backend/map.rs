@@ -47,6 +47,9 @@ impl MapTrait for Map {
 
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
         self.sto[position.y][position.x] = tile_type;
+        let event = frontend::Event::SetTile{position ,tile_type};
+        self.frontend_sender.send(event).unwrap();
+
     }
 
     fn get_tile(&mut self, position: Coordinates) -> TileType {
