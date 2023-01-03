@@ -96,10 +96,10 @@ impl MapTrait for Map {
     }
 
     fn get_length(&self) -> usize {
-        self.sto.len()
+        self.sto[0].len()
     }
 
     fn get_height(&self) -> usize {
-        self.sto[0].len()
+        self.sto.len()
     }
 }
