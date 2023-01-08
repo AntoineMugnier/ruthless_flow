@@ -19,7 +19,7 @@ pub enum Events {
     },
     MoveHeadsTick,
     SetNextHeadDir {
-        direction: Option<Direction>,
+        direction: Direction,
     },
 }
 
@@ -41,14 +41,18 @@ impl <MapType: MapTrait> Board<MapType>{
             let move_head_event = heads::Events::MoveHead { direction, prohibited_directions, map };
             head.dispatch(move_head_event);
         }
+
+        //This user direction has been "consumed" and should not longer be used
+        self.next_direction = None;
+
     }
 
     fn kill_head_handler(&mut self, id: heads::Id) {
         self.heads.remove(id);
     }
 
-    fn set_next_head_dir(&mut self, direction: Option<Direction>) {
-        self.next_direction = direction
+    fn set_next_head_dir(&mut self, direction: Direction) {
+        self.next_direction = Some(direction);
     }
     
     fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {

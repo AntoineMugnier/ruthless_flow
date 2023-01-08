@@ -1,7 +1,7 @@
 extern crate piston_window;
 pub mod gfx_map;
 mod config;
-use crate::{utils::Coordinates};
+use crate::{utils::{Coordinates, Direction}, backend};
 use piston_window::*;
 
 use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
@@ -55,11 +55,33 @@ impl Frontend{
             }
     
             if let Some(ref args) = e.press_args() {
-                return    
+                match args {
+                    Button::Keyboard(key) => {
+                        match key {
+                            Key::Left =>{
+                                self.send_next_direction(Direction::Left);
+                            },
+                            Key::Right =>{
+                                self.send_next_direction(Direction::Right);
+                            },
+                            Key::Up =>{
+                                self.send_next_direction(Direction::Up);
+                            },
+                            Key::Down =>{
+                                self.send_next_direction(Direction::Down);
+                            }
+                            _ => ()
+                        }
+                    },
+                    _ => ()
+                }
             }
-
-            
         }
+
 }
 
+fn send_next_direction(&mut self, direction : Direction){
+    let event = backend::board::Events::SetNextHeadDir { direction};
+    self.backend_event_sender.send(event).unwrap();
+}
 }
