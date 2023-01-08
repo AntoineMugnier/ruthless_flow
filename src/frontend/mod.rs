@@ -1,9 +1,10 @@
 extern crate piston_window;
 pub mod gfx_map;
-
+mod config;
+use crate::{utils::Coordinates};
 use piston_window::*;
 
-use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}, utils::Coordinates};
+use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
 
 use self::gfx_map::GfxMap;
 
@@ -24,7 +25,7 @@ impl Frontend{
     ) -> Frontend{
         
         let mut window: PistonWindow = 
-            WindowSettings::new("Ruthless Flow", [640, 480])
+            WindowSettings::new("Ruthless Flow", config::SCREEN_SIZE)
             .exit_on_esc(true).build().unwrap();
 
         Frontend {window, gfx_map, backend_event_sender, frontend_event_receiver}
@@ -41,7 +42,7 @@ impl Frontend{
             }
             
             if let Some(ref args) = e.update_args() {
-                while let Ok(evt) = self.frontend_event_receiver.recv() {
+                while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                     match evt {
                         Event::NewMapLine{line} =>{
                             self.gfx_map.add_line(line);
@@ -53,7 +54,8 @@ impl Frontend{
                 }
             }
     
-            if let Some(ref args) = e.press_args() {    
+            if let Some(ref args) = e.press_args() {
+                return    
             }
 
             
