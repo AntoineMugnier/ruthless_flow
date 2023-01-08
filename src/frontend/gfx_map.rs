@@ -25,7 +25,6 @@ impl GfxMap{
     pub fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
         let y_max = self.get_height() - 1;
         
-        //println!("{} {}", position.x, position.y);
         // Set the tile according to the new referential 
         self.sto[y_max - position.y ][position.x] = tile_type;
     }
@@ -81,14 +80,14 @@ impl GfxMap{
         }
     }
 
-    
+
+
     pub fn render(&mut self, c: &Context, g: &mut G2d){
         clear(color::WHITE, g);
 
         self.render_tiles(c, g);
 
         self.render_grid(c, g);
-
     }
 
     pub fn add_line(&mut self, line:Vec<TileType>){

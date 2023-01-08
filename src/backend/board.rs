@@ -3,6 +3,7 @@ use super::heads::{self, Head, SimpleHead};
 use super::map::{MapTrait};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
+use crate::frontend;
 use std::thread;
 use std::time::Duration;
 
@@ -28,6 +29,7 @@ pub struct Board<MapType: MapTrait> {
     heads: HeadList<SimpleHead>,
     board_events_receiver: Receiver<Events>,
     board_events_sender: Sender<Events>,
+    frontend_events_sender: Sender<frontend::Event>,
     next_direction: Option<Direction>,
     move_heads_timer_h: std::thread::JoinHandle<()>
 }
@@ -41,18 +43,15 @@ impl <MapType: MapTrait> Board<MapType>{
             let move_head_event = heads::Events::MoveHead { direction, prohibited_directions, map };
             head.dispatch(move_head_event);
         }
-
-        //This user direction has been "consumed" and should not longer be used
-        self.next_direction = None;
-
+        
     }
-
     fn kill_head_handler(&mut self, id: heads::Id) {
         self.heads.remove(id);
     }
 
     fn set_next_head_dir(&mut self, direction: Direction) {
         self.next_direction = Some(direction);
+        self.frontend_events_sender.send(frontend::Event::UserDirSet{direction:Some(direction)});
     }
     
     fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {
@@ -65,6 +64,7 @@ impl <MapType: MapTrait> Board<MapType>{
         map : MapType,
         board_events_sender: Sender<Events>,
         board_events_receiver: Receiver<Events>,
+        frontend_events_sender: Sender<frontend::Event>
     ) -> Self {
 
         // Create first head
@@ -91,6 +91,7 @@ impl <MapType: MapTrait> Board<MapType>{
             heads,
             board_events_sender,
             board_events_receiver,
+            frontend_events_sender,
             next_direction: None,
             move_heads_timer_h
         }

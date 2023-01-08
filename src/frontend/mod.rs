@@ -1,20 +1,23 @@
 extern crate piston_window;
 pub mod gfx_map;
+pub mod game_info;
 mod config;
 use crate::{utils::{Coordinates, Direction}, backend};
 use piston_window::*;
 
 use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
 
-use self::gfx_map::GfxMap;
+use self::{gfx_map::GfxMap, game_info::GameInfoGfx};
 
 pub enum Event {
     NewMapLine{line : Vec<TileType>},
-    SetTile{position: Coordinates, tile_type: TileType}
+    SetTile{position: Coordinates, tile_type: TileType},
+    UserDirSet{direction : Option<Direction>}
 }
 pub struct Frontend{
     window: PistonWindow,
     gfx_map : GfxMap,
+    game_info_gfx : GameInfoGfx,
     backend_event_sender: Sender<board::Events>,
     frontend_event_receiver: Receiver<Event>,
 
@@ -28,7 +31,8 @@ impl Frontend{
             WindowSettings::new("Ruthless Flow", config::SCREEN_SIZE)
             .exit_on_esc(true).build().unwrap();
 
-        Frontend {window, gfx_map, backend_event_sender, frontend_event_receiver}
+        let game_info_gfx = GameInfoGfx::new();
+        Frontend {window, gfx_map, game_info_gfx, backend_event_sender, frontend_event_receiver}
     }
 
     pub fn run(&mut self) {
@@ -38,6 +42,7 @@ impl Frontend{
             if let Some(ref args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, _device| {
                     self.gfx_map.render(&c, g);
+                    self.game_info_gfx.render(&c, g);
                 });
             }
             
@@ -49,7 +54,10 @@ impl Frontend{
                         },
                         Event::SetTile { position, tile_type } =>{
                             self.gfx_map.set_tile(position, tile_type);
-                        } 
+                        }
+                        Event::UserDirSet { direction } => {
+                            self.game_info_gfx.set_user_direction(direction);
+                        }, 
                     }
                 }
             }

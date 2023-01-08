@@ -18,46 +18,35 @@ fn main() {
 
 
     let (backend_event_sender, backend_receiver) = channel();
-    let (frontend_sender, frontend_event_receiver) = channel();
+    let (frontend_event_sender, frontend_event_receiver) = channel();
 
     let sto =  VecDeque::from([
-        vec![
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-        ],
-        vec![
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-        ],
-        vec![
-            TileType::Free,
-            TileType::Wall,
-            TileType::Wall,
-            TileType::Wall,
-            TileType::Free,
-        ],
-        vec![
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-            TileType::Free,
-        ],
-    ]);
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Separator,TileType::Free,TileType::Free, TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Separator,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
+        vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,]]
+    );
 
-    let  map = Map::new(frontend_sender, sto.clone());
+
+
+    let backend_event_sender_clone = backend_event_sender.clone(); // For the Board to post events to itself
+    let frontend_event_sender_clone = frontend_event_sender.clone();
+
+    let  map = Map::new(frontend_event_sender, sto.clone());
 
     let gfx_map = GfxMap::new(sto);
-
-    let backend_sender_clone = backend_event_sender.clone(); // For the Board to post events to itself
+    
     thread::spawn(move || {
-            let mut board: Board<Map>  = Board::new(map, backend_sender_clone, backend_receiver);
+            let mut board: Board<Map>  = Board::new(map, backend_event_sender_clone, backend_receiver, frontend_event_sender_clone);
             board.run();
         });
 
