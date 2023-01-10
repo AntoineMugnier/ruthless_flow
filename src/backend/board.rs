@@ -51,7 +51,7 @@ impl <MapType: MapTrait> Board<MapType>{
 
     fn set_next_head_dir(&mut self, direction: Direction) {
         self.next_direction = Some(direction);
-        self.frontend_events_sender.send(frontend::Event::UserDirSet{direction:Some(direction)});
+        self.frontend_events_sender.send(frontend::Event::UserDirSet{direction});
     }
     
     fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {

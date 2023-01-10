@@ -83,7 +83,6 @@ impl GfxMap{
 
 
     pub fn render(&mut self, c: &Context, g: &mut G2d){
-        clear(color::WHITE, g);
 
         self.render_tiles(c, g);
 
