@@ -30,12 +30,12 @@ pub struct Board<MapType: MapTrait> {
     board_events_receiver: Receiver<Events>,
     board_events_sender: Sender<Events>,
     frontend_events_sender: Sender<frontend::Event>,
-    next_direction: Option<Direction>,
+    next_direction: Direction,
     move_heads_timer_h: std::thread::JoinHandle<()>
 }
 
 impl <MapType: MapTrait> Board<MapType>{
-    fn move_heads_handler(&mut self, direction: Option<Direction>) {
+    fn move_heads_handler(&mut self, direction: Direction) {
         let map = &mut self.map;
 
         for head in self.heads.iter_mut() {
@@ -50,8 +50,10 @@ impl <MapType: MapTrait> Board<MapType>{
     }
 
     fn set_next_head_dir(&mut self, direction: Direction) {
-        self.next_direction = Some(direction);
+        if direction != self.next_direction{
+        self.next_direction = direction;
         self.frontend_events_sender.send(frontend::Event::UserDirSet{direction});
+        }
     }
     
     fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {
@@ -92,7 +94,7 @@ impl <MapType: MapTrait> Board<MapType>{
             board_events_sender,
             board_events_receiver,
             frontend_events_sender,
-            next_direction: None,
+            next_direction: Direction::Up,
             move_heads_timer_h
         }
     }

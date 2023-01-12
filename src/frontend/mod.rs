@@ -36,7 +36,7 @@ impl Frontend{
             .build().unwrap();
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
         let mut texture_context = window.create_texture_context();
-        let game_info_gfx = GameInfoGfx::new(&mut texture_context);
+        let game_info_gfx = GameInfoGfx::new();
         
         Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, backend_event_sender, frontend_event_receiver}
     }

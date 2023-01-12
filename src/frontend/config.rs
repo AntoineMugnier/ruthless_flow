@@ -22,19 +22,28 @@ pub mod game_info{
     pub const END_X : f64 = 1230.0;
     pub const END_Y : f64 = 325.0;
     
+
     pub mod frame{
         pub const BAR_WIDTH : f64 = 1.0;
     }
 
     pub mod dir{
-        pub const TEXT_ORIGIN_X : f64 = super::ORIGIN_X + 20.0;
-        pub const TEXT_ORIGIN_Y: f64 = super::ORIGIN_Y + 20.0;
+        pub const ORIGIN_X : f64 = super::ORIGIN_X + 20.0;
+        pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 40.0;
+        pub mod arrow{
+            pub const FONT_SIZE: u32 = 32;
+            pub const ORIGIN_X : f64 = super::ORIGIN_X + 60.0;
+            pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 5.0;
+        }
+        pub mod text{
+            pub const FONT_SIZE: u32 = 16;
+            pub const ORIGIN_X : f64 = super::ORIGIN_X;
+            pub const ORIGIN_Y: f64 = super::ORIGIN_Y;
+        }
 
     }
 }
 
 pub mod assets{
-    pub const FONTS_PATH : &str = "assets/fonts/04B_30__.TTF";
-    pub const UP_ARROW_PATH : &str = "assets/images/rust.png";
-
+    pub const FONTS_PATH : &str = "assets/fonts/Cambria Bold 700.ttf";
 }

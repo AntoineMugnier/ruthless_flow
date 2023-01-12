@@ -8,7 +8,7 @@ use crate::utils::{Coordinates, Direction, DirectionFlags};
 
 pub enum Events<'a, MapType: MapTrait> {
     MoveHead {
-        direction: Option<Direction>,
+        direction: Direction,
         prohibited_directions : DirectionFlags, // bitfield to hold already explored or forbidden directions
         map: &'a mut MapType,
     },
@@ -43,7 +43,7 @@ mod private {
         fn set_provenance(&mut self, coming_from: Direction);
         fn get_position(&self) -> Coordinates;
         fn get_provenance(&self) -> Direction;
-        fn move_head_handler(&mut self, direction: Option<Direction>, prohibited_directions : DirectionFlags, map: &mut impl MapTrait);
+        fn move_head_handler(&mut self, direction: Direction, prohibited_directions : DirectionFlags, map: &mut impl MapTrait);
         fn explore_direction(
             position: Coordinates,
             chosen_direction: Direction,
@@ -77,14 +77,13 @@ impl private::Sealed for SimpleHead {
         self.set_provenance(chosen_direction.reverse());
     }
 
-    fn move_head_handler(&mut self, direction: Option<Direction>, mut prohibited_directions : DirectionFlags, map: &mut impl MapTrait) {
+    fn move_head_handler(&mut self, direction: Direction, mut prohibited_directions : DirectionFlags, map: &mut impl MapTrait) {
 
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from); 
 
         // Select a random direction if no one has been set
         let proposed_direction;
-        if let Some(direction) = direction {
             if direction != self.coming_from{
                 proposed_direction = direction;
                 prohibited_directions.insert(proposed_direction);
@@ -92,9 +91,7 @@ impl private::Sealed for SimpleHead {
             else{ 
                 proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
             }
-        } else {
-            proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
-        }
+  
 
         // Try to explore explore the `proposed_direction`. If the move is impossible, explore all the other authorized directions around the head.
         let (chosen_direction, target_tile, target_position) = Self::explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map);
@@ -373,59 +370,45 @@ fn test_basic_moves(){
     test_move(&mut seq, &mut map, &mut event_sender, &tc3);
     
 
-    // Test 4: Chosen direction refused because it's empty leads to move to Separator tile
+    // Test 4: Chosen direction leads to free tile
     let previous_way_4 = target_way_3;
-    let target_way_4 = test_conditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :8, y:11}, alt_target_tile : TileType::Separator};
+    let target_way_4 = test_conditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:10}, alt_target_tile : TileType::Free};
     
     let tc4 = test_conditions::General{
         previous_way : previous_way_4,
-        first_stage: test_conditions::FirstStage::InvalidDir{way: target_way_4 , picker_ctx: &picker_ctx},
-        to_wall: None,
-        on_separator: None,
-        last_stage : test_conditions::LastStage::ToFree
-    };
-    test_move(&mut seq, &mut map, &mut event_sender, &tc4);
-
-    // Test 5: Chosen direction leads to free tile
-    let previous_way_5 = target_way_4;
-    let target_way_5 = test_conditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:10}, alt_target_tile : TileType::Free};
-    
-    let tc5 = test_conditions::General{
-        previous_way : previous_way_5,
-        first_stage: test_conditions::FirstStage::ValidDir { way: target_way_5},
+        first_stage: test_conditions::FirstStage::ValidDir { way: target_way_4},
         to_wall: None,
         on_separator: Some(test_conditions::OnSeparator{}),
         last_stage : test_conditions::LastStage::ToFree
     };
-    test_move(&mut seq, &mut map, &mut event_sender, &tc5);
+    test_move(&mut seq, &mut map, &mut event_sender, &tc4);
 
-    // Test 6: Chosen direction leads to marked tile and then to merge
-    let previous_way_6 = target_way_5;
-    let target_way_6 = test_conditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:9}, alt_target_tile : TileType::Marked};
+    // Test 5: Chosen direction leads to marked tile and then to merge
+    let previous_way_5 = target_way_4;
+    let target_way_5 = test_conditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:9}, alt_target_tile : TileType::Marked};
     let head_id = 524;
-    let tc6 = test_conditions::General{
-        previous_way : previous_way_6,
-        first_stage: test_conditions::FirstStage::ValidDir { way: target_way_6},
+    let tc5 = test_conditions::General{
+        previous_way : previous_way_5,
+        first_stage: test_conditions::FirstStage::ValidDir { way: target_way_5},
         on_separator: None,
         to_wall: None,
         last_stage : test_conditions::LastStage::ToMarked{id:head_id},
     };
-    test_move(&mut seq, &mut map, &mut event_sender, &tc6);
+    test_move(&mut seq, &mut map, &mut event_sender, &tc5);
 
     let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender);
 
-    dispatch_head_evt(Some(target_way_0.alt_direction), &mut map, &mut simple_head);
-    dispatch_head_evt(Some(target_way_1.alt_direction), &mut map, &mut simple_head);
-    dispatch_head_evt(Some(backward_way_2), &mut map, &mut simple_head);
-    dispatch_head_evt(Some(failed_target_way_3.alt_direction), &mut map, &mut simple_head);
-    dispatch_head_evt(None, &mut map, &mut simple_head);
-    dispatch_head_evt(Some(target_way_5.alt_direction), &mut map, &mut simple_head);
-    dispatch_head_evt(Some(target_way_6.alt_direction), &mut map, &mut simple_head);
+    dispatch_head_evt(target_way_0.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(target_way_1.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(backward_way_2, &mut map, &mut simple_head);
+    dispatch_head_evt(failed_target_way_3.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(target_way_4.alt_direction, &mut map, &mut simple_head);
+    dispatch_head_evt(target_way_5.alt_direction, &mut map, &mut simple_head);
 
 
 }
 
-fn dispatch_head_evt(head_going_to: Option<Direction>, map: &mut MockMapTrait, simple_head: &mut SimpleHead) {
+fn dispatch_head_evt(head_going_to: Direction, map: &mut MockMapTrait, simple_head: &mut SimpleHead) {
     let event = Events::MoveHead { direction: head_going_to, prohibited_directions : DirectionFlags::empty(),  map: map};
     simple_head.dispatch(event);
 }

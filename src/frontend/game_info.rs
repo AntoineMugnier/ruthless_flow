@@ -5,7 +5,6 @@ use super::config;
 
 pub struct GameInfoGfx{
     direction : Direction,
-    arrow_logo : G2dTexture
 }
 
 pub enum Event{
@@ -16,17 +15,9 @@ pub enum Event{
 
 impl GameInfoGfx{
 
-    pub fn new(texture_context : &mut G2dTextureContext) -> GameInfoGfx{
+    pub fn new() -> GameInfoGfx{
 
-    // Create the arrow texture
-    let arrow_logo: G2dTexture = Texture::from_path(
-        texture_context,
-        config::assets::UP_ARROW_PATH,
-        Flip::None,
-        &TextureSettings::new()
-    ).unwrap();
-
-        GameInfoGfx{direction: Direction::Up, arrow_logo}
+        GameInfoGfx{direction: Direction::Up}
     }
 
     fn render_frame(&mut self, c: &Context, g: &mut G2d){
@@ -37,29 +28,42 @@ impl GameInfoGfx{
          line(color::BLACK, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::ORIGIN_Y], c.transform, g);
     }
 
+    fn draw_arrow(x: f64, y : f64, direction: Direction,  glyph_cache: &mut Glyphs, c: &Context, g: &mut G2d){
+        let transform = c.transform.trans(x, y);
+        
+        let arrow_char : char;
+
+        //Choose the proper unicode arrow character depending on selected dir
+        match direction{
+            Direction::Up =>arrow_char = '\u{2191}',
+            Direction::Down =>arrow_char = '\u{2193}',
+            Direction::Right =>arrow_char ='\u{2192}',
+            Direction::Left => arrow_char ='\u{2190}',
+        }
+    
+        text::Text::new_color(color::BLACK, config::game_info::dir::arrow::FONT_SIZE).draw(&arrow_char.to_string(),
+        glyph_cache,
+        &c.draw_state,
+        transform,
+        g).unwrap();
+    }
+
     fn render_user_direction(&mut self, glyph_cache : &mut Glyphs,    c: &Context, g: &mut G2d){
         
         let mut draw_str = |str, x, y|{
         let transform = c.transform.trans(x, y);
-        text::Text::new_color(color::BLACK, 12).draw(str,
+        
+        text::Text::new_color(color::BLACK, config::game_info::dir::text::FONT_SIZE).draw(str,
         glyph_cache,
         &c.draw_state,
         transform,
         g).unwrap();
         };
         
-        draw_str("DIR: ", config::game_info::dir::TEXT_ORIGIN_X , config::game_info::dir::TEXT_ORIGIN_Y);
+        let direction_str = "DIR:";
+        draw_str(direction_str, config::game_info::dir::text::ORIGIN_X , config::game_info::dir::text::ORIGIN_Y);
 
-
-
-        // Create the image object and attach a square Rectangle object inside.
-        let image= Image::new().rect(square(0.0, 0.0, 200.0));
-        
-        // A texture to use with the image
-        //Draw the image with the texture
- 		image.draw(&self.arrow_logo, &c.draw_state, c.transform, g);
-
-
+        Self::draw_arrow(config::game_info::dir::arrow::ORIGIN_X , config::game_info::dir::arrow::ORIGIN_Y, self.direction,  glyph_cache, c, g);
     }
 
     pub fn render(&mut self, glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
