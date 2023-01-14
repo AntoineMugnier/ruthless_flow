@@ -6,23 +6,29 @@ use crate::mpsc::Sender;
 use super::board;
 
 pub struct HeadList<HeadType: Head>{
-    heads_vec: Vec<Option<HeadType>>
+    heads_vec: Vec<Option<HeadType>>,
+    nb_heads: usize
 }
 
 impl <HeadType : Head> HeadList<HeadType>{
     pub fn new() -> HeadList<HeadType>{
         let heads_vec = Vec::new();
-        HeadList{heads_vec}
+        HeadList{heads_vec, nb_heads: 0}
     }
     
+    pub fn get_nb_heads(&self) -> usize{
+
+        self.nb_heads
+    }
+
     #[allow(dead_code)]
-    pub fn iter_mut(&mut self) -> FilterMap<std::slice::IterMut<'_, Option<HeadType>>, for<'r> fn(&'r mut Option<HeadType>) -> Option<&'r mut HeadType>> {
+    pub fn iter_mut(&mut self) -> impl Iterator + '_ {
         let filtering_fn : fn(&mut Option<HeadType>) -> Option<&mut HeadType> = |x : &mut Option<HeadType>| if let Some(head) = x {Some(head)} else {None};
         self.heads_vec.iter_mut().filter_map(filtering_fn)
     }
 
     #[allow(dead_code)]
-    pub fn iter(&mut self) -> FilterMap<std::slice::Iter<'_, Option<HeadType>>, for<'r> fn(&'r Option<HeadType>) -> Option<&'r HeadType>> {
+    pub fn iter(&mut self) -> impl Iterator + '_ {
         let filtering_fn : fn(& Option<HeadType>) -> Option<& HeadType> = |x : & Option<HeadType>| if let Some(head) = x {Some(head)} else {None};
         self.heads_vec.iter().filter_map(filtering_fn)
     }
@@ -55,9 +61,9 @@ impl <HeadType : Head> HeadList<HeadType>{
             self.heads_vec.push(Some(new_head));
             new_slot_pos = self.heads_vec.len() -1;
         }
-        
-        self.heads_vec[new_slot_pos].as_mut().unwrap()
 
+        self.nb_heads+=1; // Increase current number of heads
+        self.heads_vec[new_slot_pos].as_mut().unwrap()
     }
 
     pub fn remove(&mut self, id_of_head_to_remove: Id){
@@ -65,6 +71,7 @@ impl <HeadType : Head> HeadList<HeadType>{
             if let Some(head) = head_opt{
                 if head.get_id() == id_of_head_to_remove{
                     head_opt.take();
+                    self.nb_heads-=1; // Decrease current number of heads
                 }
             }
 

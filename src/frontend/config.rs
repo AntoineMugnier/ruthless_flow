@@ -27,9 +27,15 @@ pub mod game_info{
         pub const BAR_WIDTH : f64 = 1.0;
     }
 
+    pub mod time{
+        pub const FONT_SIZE: u32 = 18;
+        pub const ORIGIN_X : f64 = super::ORIGIN_X + 20.0;
+        pub const ORIGIN_Y: f64 = super::ORIGIN_Y  + 40.0;
+    }
+
     pub mod dir{
         pub const ORIGIN_X : f64 = super::ORIGIN_X + 22.0;
-        pub const ORIGIN_Y: f64 = super::ORIGIN_Y +100.0;
+        pub const ORIGIN_Y: f64 = super::time::ORIGIN_Y + ((super::END_Y - super::ORIGIN_Y) as f64/3.0) ;
 
         pub mod arrow{
             pub const FONT_SIZE: u32 = 32;
@@ -42,10 +48,11 @@ pub mod game_info{
             pub const ORIGIN_Y: f64 = super::ORIGIN_Y;
         }
     }
-    pub mod time{
+
+    pub mod nb_heads{
         pub const FONT_SIZE: u32 = 18;
         pub const ORIGIN_X : f64 = super::ORIGIN_X + 20.0;
-        pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 40.0;
+        pub const ORIGIN_Y: f64 = super::dir::ORIGIN_Y + ((super::END_Y - super::ORIGIN_Y) as f64/3.0) ;
     }
 
 }

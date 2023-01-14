@@ -6,7 +6,8 @@ use super::config;
 
 pub struct GameInfoGfx{
     direction : Direction,
-    init_time : SystemTime
+    init_time : SystemTime,
+    nb_heads : usize
 }
 
 pub enum Event{
@@ -18,7 +19,7 @@ impl GameInfoGfx{
 
     pub fn new() -> GameInfoGfx{
 
-        GameInfoGfx{direction: Direction::Up, init_time : SystemTime::now()}
+        GameInfoGfx{direction: Direction::Up, init_time : SystemTime::now(), nb_heads: 0}
     }
 
     fn render_frame(&mut self, c: &Context, g: &mut G2d){
@@ -37,7 +38,7 @@ impl GameInfoGfx{
         let centiseconds = (time_elapsed/10) %100;
 
         let transform = c.transform.trans(config::game_info::time::ORIGIN_X, config::game_info::time::ORIGIN_Y);
-        let direction_str = format!("{:02}::{:02}::{:02}", minutes , seconds, centiseconds);
+        let direction_str = format!("{:02}:{:02}:{:02}", minutes , seconds, centiseconds);
 
         text::Text::new_color(color::BLACK, config::game_info::time::FONT_SIZE).draw(&direction_str,
         glyph_cache,
@@ -45,6 +46,21 @@ impl GameInfoGfx{
         transform,
         g).unwrap();
     }
+
+    
+    fn render_nb_heads(&mut self,  glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
+
+
+        let transform = c.transform.trans(config::game_info::nb_heads::ORIGIN_X, config::game_info::nb_heads::ORIGIN_Y);
+        let heads_str = format!("Heads: {}", self.nb_heads);
+
+        text::Text::new_color(color::BLACK, config::game_info::nb_heads::FONT_SIZE).draw(&heads_str,
+        glyph_cache,
+        &c.draw_state,
+        transform,
+        g).unwrap();
+    }
+
 
     fn draw_arrow(x: f64, y : f64, direction: Direction,  glyph_cache: &mut Glyphs, c: &Context, g: &mut G2d){
         let transform = c.transform.trans(x, y);
@@ -78,16 +94,21 @@ impl GameInfoGfx{
         g).unwrap();
         };
         
-        let direction_str = "DIR:";
+        let direction_str = "Dir:";
         draw_str(direction_str, config::game_info::dir::text::ORIGIN_X , config::game_info::dir::text::ORIGIN_Y);
 
         Self::draw_arrow(config::game_info::dir::arrow::ORIGIN_X , config::game_info::dir::arrow::ORIGIN_Y, self.direction,  glyph_cache, c, g);
+    }
+
+    pub fn update_nb_heads(&mut self, nb_heads : usize){
+        self.nb_heads = nb_heads;
     }
 
     pub fn render(&mut self, glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
         self.render_frame(c, g);
         self.render_user_direction(glyph_cache,c, g);
         self.render_time(glyph_cache, c, g);
+        self.render_nb_heads(glyph_cache, c, g);
     }
 
     pub fn set_user_direction(&mut self, direction:Direction){

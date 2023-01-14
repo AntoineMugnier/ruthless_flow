@@ -45,8 +45,15 @@ impl <MapType: MapTrait> Board<MapType>{
         }
         
     }
+
+    fn send_current_nb_heads(&self){
+        let event = frontend::Event::UpdateNbHeads{nb_heads: self.heads.get_nb_heads()};
+        self.frontend_events_sender.send(event);
+    }
+    
     fn kill_head_handler(&mut self, id: heads::Id) {
         self.heads.remove(id);
+        self.send_current_nb_heads();
     }
 
     fn set_next_head_dir(&mut self, direction: Direction) {
@@ -60,6 +67,8 @@ impl <MapType: MapTrait> Board<MapType>{
         let head = self.heads.add_head(position, coming_from, self.board_events_sender.clone());
         let event = heads::Event::MoveHead { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
         head.dispatch(event);
+
+        self.send_current_nb_heads();
     }
 
     pub fn new(
@@ -88,7 +97,7 @@ impl <MapType: MapTrait> Board<MapType>{
             }
         });
 
-        Self {
+        let board = Self {
             map,
             heads,
             board_events_sender,
@@ -96,7 +105,11 @@ impl <MapType: MapTrait> Board<MapType>{
             frontend_events_sender,
             next_direction: Direction::Up,
             move_heads_timer_h
-        }
+        };
+
+        board.send_current_nb_heads();
+
+        board
     }
 
 

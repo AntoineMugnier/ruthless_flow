@@ -13,7 +13,8 @@ use self::{gfx_map::GfxMap, game_info::GameInfoGfx};
 pub enum Event {
     NewMapLine{line : Vec<TileType>},
     SetTile{position: Coordinates, tile_type: TileType},
-    UserDirSet{direction : Direction}
+    UserDirSet{direction : Direction},
+    UpdateNbHeads{nb_heads: usize}
 }
 pub struct Frontend{
     window: PistonWindow,
@@ -67,6 +68,9 @@ impl Frontend{
                         }
                         Event::UserDirSet { direction } => {
                             self.game_info_gfx.set_user_direction(direction);
+                        }, 
+                        Event::UpdateNbHeads { nb_heads } => {
+                            self.game_info_gfx.update_nb_heads(nb_heads);
                         }, 
                     }
                 }
