@@ -19,7 +19,7 @@ pub struct SimpleHead {
     id: Id,
     position: Coordinates,
     coming_from: Direction,
-    events_sender: Sender<board::Events>,
+    board_events_sender: Sender<board::Events>,
     head_split : bool
 
 }
@@ -29,7 +29,7 @@ pub trait Head: private::Sealed {
         id: Id,
         position: Coordinates,
         coming_from: Direction,
-        events_sender: Sender<board::Events>,
+        board_events_sender: Sender<board::Events>,
     ) -> Self;
     fn dispatch(&mut self, event: Events<impl MapTrait>);
     fn get_id(&mut self) -> Id;
@@ -102,7 +102,7 @@ impl private::Sealed for SimpleHead {
                 coming_from: self.get_provenance(),
                 parent_direction: chosen_direction,
             };
-            self.events_sender.send(add_head_event).unwrap();
+            self.board_events_sender.send(add_head_event).unwrap();
             self.head_split = false;
         }
 
@@ -111,7 +111,7 @@ impl private::Sealed for SimpleHead {
             // Order the board to kill self
             TileType::Marked => {
                 let remove_head_event = board::Events::KillHead { id: self.id };
-                self.events_sender.send(remove_head_event).unwrap();
+                self.board_events_sender.send(remove_head_event).unwrap();
             }
             // Move the head to the location and mark the tile
             TileType::Free =>  {
@@ -155,13 +155,13 @@ impl Head for SimpleHead {
         id: Id,
         position: Coordinates,
         coming_from: Direction,
-        events_sender: Sender<board::Events>,
+        board_events_sender: Sender<board::Events>,
     ) -> SimpleHead { // TODO, initialize with map
         SimpleHead {
             id,
             position,
             coming_from,
-            events_sender,
+            board_events_sender,
             head_split : false
         }
     }
@@ -222,7 +222,7 @@ pub struct ToWall<'a>{pub ways: Vec<Way> ,pub picker_ctx : &'a PickerCtx}
 
 }
 
-fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, event_sender : &mut MockSender<board::Events>, tc: &test_conditions::General){
+fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_sender : &mut MockSender<board::Events>, tc: &test_conditions::General){
     let original_position = tc.previous_way.alt_target_position;
     let original_direction = tc.previous_way.alt_direction;
 
@@ -262,7 +262,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, event_sender : &mut
     }
 
     if let Some(_) = tc.on_separator{
-        event_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
+        board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
             match board_event{
             board::Events::AddHead { position, coming_from, parent_direction} => *position==original_position && *coming_from == original_direction.reverse() && *parent_direction==target_direction ,
             _ => return false
@@ -272,7 +272,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, event_sender : &mut
 
     match tc.last_stage {
         test_conditions::LastStage::ToMarked{id:expected_id} => {
-            event_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
+            board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
                 match board_event{
                 board::Events::KillHead {id} =>  *id == expected_id,
                 _ => return false
@@ -304,7 +304,7 @@ fn test_basic_moves(){
         
     let mut seq = Sequence::new();
     let mut map = MockMapTrait::default();
-    let mut event_sender = Sender::default();
+    let mut board_board_events_sender = Sender::default();
     let picker_ctx  = DirectionPicker::pick_context();
     // Test 0, Starting on Free Tile, normal move to free tile with chosen direction accepted
 
@@ -320,7 +320,7 @@ fn test_basic_moves(){
     };
 
     // Test 1: Normal move to free tile with chosen direction accepted 
-    test_move(&mut seq, &mut map, &mut event_sender, &tc0);
+    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc0);
 
     let previous_way_1 = target_way_0;
     let target_way_1 = test_conditions::Way{alt_direction: Direction::Up, alt_target_position : Coordinates{x :11, y:11}, alt_target_tile : TileType::Free};
@@ -335,7 +335,7 @@ fn test_basic_moves(){
     };
 
     // Test 2: Chosen direction refused because it's backward leads to move to free tile
-    test_move(&mut seq, &mut map, &mut event_sender, &tc1);
+    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc1);
 
     let previous_way_2 = target_way_1;
     let backward_way_2 = target_way_1.alt_direction.reverse();
@@ -349,7 +349,7 @@ fn test_basic_moves(){
         last_stage : test_conditions::LastStage::ToFree
     };
 
-    test_move(&mut seq, &mut map, &mut event_sender, &tc2);
+    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc2);
 
     // Test 3: Chosen direction is refused because of a wall 
     let previous_way_3 = target_way_2;
@@ -364,7 +364,7 @@ fn test_basic_moves(){
         last_stage : test_conditions::LastStage::ToSeparator
 
     };
-    test_move(&mut seq, &mut map, &mut event_sender, &tc3);
+    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc3);
     
 
     // Test 4: Chosen direction leads to free tile
@@ -378,7 +378,7 @@ fn test_basic_moves(){
         on_separator: Some(test_conditions::OnSeparator{}),
         last_stage : test_conditions::LastStage::ToFree
     };
-    test_move(&mut seq, &mut map, &mut event_sender, &tc4);
+    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc4);
 
     // Test 5: Chosen direction leads to marked tile and then to merge
     let previous_way_5 = target_way_4;
@@ -391,9 +391,9 @@ fn test_basic_moves(){
         to_wall: None,
         last_stage : test_conditions::LastStage::ToMarked{id:head_id},
     };
-    test_move(&mut seq, &mut map, &mut event_sender, &tc5);
+    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc5);
 
-    let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  event_sender);
+    let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  board_board_events_sender);
 
     dispatch_head_evt(target_way_0.alt_direction, &mut map, &mut simple_head);
     dispatch_head_evt(target_way_1.alt_direction, &mut map, &mut simple_head);
