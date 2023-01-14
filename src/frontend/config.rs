@@ -17,10 +17,10 @@ pub mod map{
 }
 pub mod game_info{
     pub const ORIGIN_X : f64 = 1100.0;
-    pub const ORIGIN_Y : f64 = 150.0;
+    pub const ORIGIN_Y : f64 = super::map::ORIGIN_Y;
 
     pub const END_X : f64 = 1230.0;
-    pub const END_Y : f64 = 325.0;
+    pub const END_Y : f64 = 400.0;
     
 
     pub mod frame{
@@ -28,20 +28,26 @@ pub mod game_info{
     }
 
     pub mod dir{
-        pub const ORIGIN_X : f64 = super::ORIGIN_X + 20.0;
-        pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 40.0;
+        pub const ORIGIN_X : f64 = super::ORIGIN_X + 22.0;
+        pub const ORIGIN_Y: f64 = super::ORIGIN_Y +100.0;
+
         pub mod arrow{
             pub const FONT_SIZE: u32 = 32;
             pub const ORIGIN_X : f64 = super::ORIGIN_X + 60.0;
             pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 5.0;
         }
         pub mod text{
-            pub const FONT_SIZE: u32 = 16;
+            pub const FONT_SIZE: u32 = 18;
             pub const ORIGIN_X : f64 = super::ORIGIN_X;
             pub const ORIGIN_Y: f64 = super::ORIGIN_Y;
         }
-
     }
+    pub mod time{
+        pub const FONT_SIZE: u32 = 18;
+        pub const ORIGIN_X : f64 = super::ORIGIN_X + 20.0;
+        pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 40.0;
+    }
+
 }
 
 pub mod assets{

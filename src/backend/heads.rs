@@ -82,16 +82,15 @@ impl private::Sealed for SimpleHead {
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from); 
 
-        // Select a random direction if no one has been set
+        // Check if the direction sent to the function is not prohibited
         let proposed_direction;
-            if direction != self.coming_from{
+            if prohibited_directions.contains(direction){
+                proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
+            }
+            else{
                 proposed_direction = direction;
                 prohibited_directions.insert(proposed_direction);
             }
-            else{ 
-                proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
-            }
-  
 
         // Try to explore explore the `proposed_direction`. If the move is impossible, explore all the other authorized directions around the head.
         let (chosen_direction, target_tile, target_position) = Self::explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map);
@@ -135,7 +134,6 @@ impl private::Sealed for SimpleHead {
     ) -> (Direction, TileType, Coordinates) {
 
         if let Some((tile_type, target_position)) = map.get_neighbour_tile(original_position, chosen_direction) {
-
             match tile_type {
                 TileType::Free | TileType::Separator | TileType::Marked => return (chosen_direction, tile_type, target_position),
                 TileType::Wall => {
@@ -149,9 +147,7 @@ impl private::Sealed for SimpleHead {
             let chosen_direction = DirectionPicker::pick(prohibited_directions);
             Self::explore_direction(original_position, chosen_direction, prohibited_directions, map)
         }
-        
     }
-
 }
 
 impl Head for SimpleHead {
@@ -185,7 +181,7 @@ impl Head for SimpleHead {
 
 #[cfg(test)]
 mod tests {
-    use mockall::{predicate, Sequence, mock};
+    use mockall::{Sequence};
     use super::super::map::MockMapTrait;
     use crate::mpsc::{MockSender, SendError};
 
@@ -259,7 +255,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, event_sender : &mut
             to_wall.picker_ctx.expect().once().in_sequence(seq).returning(move |_| target_direction);
 
             map.expect_get_neighbour_tile().once().in_sequence(seq)
-            .withf(move |position, direction| {print!("{:?}, {:?}",position,direction); *position == original_position && *direction == target_direction} ).
+            .withf(move |position, direction| { *position == original_position && *direction == target_direction} ).
             return_const(Some((target_tile, target_position)));
         }
     }
@@ -372,7 +368,7 @@ fn test_basic_moves(){
 
     // Test 4: Chosen direction leads to free tile
     let previous_way_4 = target_way_3;
-    let target_way_4 = test_conditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:10}, alt_target_tile : TileType::Free};
+    let target_way_4 = test_conditions::Way{alt_direction: Direction::Right, alt_target_position : Coordinates{x :8, y:10}, alt_target_tile : TileType::Free};
     
     let tc4 = test_conditions::General{
         previous_way : previous_way_4,

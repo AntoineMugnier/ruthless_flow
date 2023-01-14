@@ -1,23 +1,24 @@
 use piston_window::{Context, G2d,line, color, text, DrawState, Transformed, glyph_cache::rusttype::GlyphCache, TextureSettings, Glyphs, Flip, Texture, G2dTexture, G2dTextureContext, image, rectangle::square, Image};
+use std::time::{SystemTime};
 
 use crate::utils::Direction;
 use super::config;
 
 pub struct GameInfoGfx{
     direction : Direction,
+    init_time : SystemTime
 }
 
 pub enum Event{
-    UpdateCurrentUserDir
-    //UPDATE_NB_HEADS,
-    //UPDATE_TIME_ELAPSED
+    UpdateCurrentUserDir,
+    UpdateNbHeads,
 }
 
 impl GameInfoGfx{
 
     pub fn new() -> GameInfoGfx{
 
-        GameInfoGfx{direction: Direction::Up}
+        GameInfoGfx{direction: Direction::Up, init_time : SystemTime::now()}
     }
 
     fn render_frame(&mut self, c: &Context, g: &mut G2d){
@@ -28,9 +29,26 @@ impl GameInfoGfx{
          line(color::BLACK, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::ORIGIN_Y], c.transform, g);
     }
 
+    fn render_time(&mut self,  glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
+
+        let time_elapsed =self.init_time.elapsed().unwrap().as_millis();
+        let minutes = (time_elapsed/(1000*60))%60;
+        let seconds = (time_elapsed/1000) % 60;
+        let centiseconds = (time_elapsed/10) %100;
+
+        let transform = c.transform.trans(config::game_info::time::ORIGIN_X, config::game_info::time::ORIGIN_Y);
+        let direction_str = format!("{:02}::{:02}::{:02}", minutes , seconds, centiseconds);
+
+        text::Text::new_color(color::BLACK, config::game_info::time::FONT_SIZE).draw(&direction_str,
+        glyph_cache,
+        &c.draw_state,
+        transform,
+        g).unwrap();
+    }
+
     fn draw_arrow(x: f64, y : f64, direction: Direction,  glyph_cache: &mut Glyphs, c: &Context, g: &mut G2d){
         let transform = c.transform.trans(x, y);
-        
+
         let arrow_char : char;
 
         //Choose the proper unicode arrow character depending on selected dir
@@ -48,7 +66,7 @@ impl GameInfoGfx{
         g).unwrap();
     }
 
-    fn render_user_direction(&mut self, glyph_cache : &mut Glyphs,    c: &Context, g: &mut G2d){
+    fn render_user_direction(&mut self, glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
         
         let mut draw_str = |str, x, y|{
         let transform = c.transform.trans(x, y);
@@ -69,6 +87,7 @@ impl GameInfoGfx{
     pub fn render(&mut self, glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
         self.render_frame(c, g);
         self.render_user_direction(glyph_cache,c, g);
+        self.render_time(glyph_cache, c, g);
     }
 
     pub fn set_user_direction(&mut self, direction:Direction){
