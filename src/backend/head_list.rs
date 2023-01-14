@@ -22,13 +22,13 @@ impl <HeadType : Head> HeadList<HeadType>{
     }
 
     #[allow(dead_code)]
-    pub fn iter_mut(&mut self) -> impl Iterator + '_ {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut HeadType> {
         let filtering_fn : fn(&mut Option<HeadType>) -> Option<&mut HeadType> = |x : &mut Option<HeadType>| if let Some(head) = x {Some(head)} else {None};
         self.heads_vec.iter_mut().filter_map(filtering_fn)
     }
 
     #[allow(dead_code)]
-    pub fn iter(&mut self) -> impl Iterator + '_ {
+    pub fn iter(&mut self) -> impl Iterator<Item = &HeadType> {
         let filtering_fn : fn(& Option<HeadType>) -> Option<& HeadType> = |x : & Option<HeadType>| if let Some(head) = x {Some(head)} else {None};
         self.heads_vec.iter().filter_map(filtering_fn)
     }
