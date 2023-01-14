@@ -210,7 +210,8 @@ pub struct OnSeparator{}
 
 pub enum LastStage{
     ToMarked{id : Id},
-    ToFree
+    ToFree,
+    ToSeparator
 }
 
 #[derive(Copy, Clone)]
@@ -278,11 +279,11 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, event_sender : &mut
             }}
             ).return_const(Result::<(), SendError<board::Events>>::Ok(()));
         },
-        test_conditions::LastStage::ToFree => {
+        test_conditions::LastStage::ToFree | test_conditions::LastStage::ToSeparator => {
             map.expect_set_tile().once().in_sequence(seq)
             .withf(move |position, tile_type| {*position == target_position && *tile_type == TileType::Marked})
             .return_const(());
-        },
+        }
     };
 
 
@@ -353,14 +354,14 @@ fn test_basic_moves(){
     // Test 3: Chosen direction is refused because of a wall 
     let previous_way_3 = target_way_2;
     let failed_target_way_3 = test_conditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :9, y:11}, alt_target_tile : TileType::Wall}; 
-    let target_way_3 = test_conditions::Way{alt_direction: Direction::Up, alt_target_position : Coordinates{x :10, y:12}, alt_target_tile : TileType::Free};
+    let target_way_3 = test_conditions::Way{alt_direction: Direction::Up, alt_target_position : Coordinates{x :10, y:12}, alt_target_tile : TileType::Separator};
 
     let tc3 = test_conditions::General{
         previous_way : previous_way_3,
         first_stage: test_conditions::FirstStage::ValidDir{way: failed_target_way_3},
         to_wall: Some(test_conditions::ToWall{ways: vec![target_way_3], picker_ctx: &picker_ctx}),
         on_separator: None,
-        last_stage : test_conditions::LastStage::ToFree
+        last_stage : test_conditions::LastStage::ToSeparator
 
     };
     test_move(&mut seq, &mut map, &mut event_sender, &tc3);
