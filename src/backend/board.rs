@@ -8,7 +8,7 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
-pub enum Events {
+pub enum Event {
     SlideFrameTick,
     KillHead {
         id: heads::Id,
@@ -27,8 +27,8 @@ pub enum Events {
 pub struct Board<MapType: MapTrait> {
     map: MapType,
     heads: HeadList<SimpleHead>,
-    board_events_receiver: Receiver<Events>,
-    board_events_sender: Sender<Events>,
+    board_events_receiver: Receiver<Event>,
+    board_events_sender: Sender<Event>,
     frontend_events_sender: Sender<frontend::Event>,
     next_direction: Direction,
     move_heads_timer_h: std::thread::JoinHandle<()>
@@ -40,7 +40,7 @@ impl <MapType: MapTrait> Board<MapType>{
 
         for head in self.heads.iter_mut() {
             let prohibited_directions = DirectionFlags::empty();
-            let move_head_event = heads::Events::MoveHead { direction, prohibited_directions, map };
+            let move_head_event = heads::Event::MoveHead { direction, prohibited_directions, map };
             head.dispatch(move_head_event);
         }
         
@@ -58,14 +58,14 @@ impl <MapType: MapTrait> Board<MapType>{
     
     fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {
         let head = self.heads.add_head(position, coming_from, self.board_events_sender.clone());
-        let event = heads::Events::MoveHead { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
+        let event = heads::Event::MoveHead { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
         head.dispatch(event);
     }
 
     pub fn new(
         map : MapType,
-        board_events_sender: Sender<Events>,
-        board_events_receiver: Receiver<Events>,
+        board_events_sender: Sender<Event>,
+        board_events_receiver: Receiver<Event>,
         frontend_events_sender: Sender<frontend::Event>
     ) -> Self {
 
@@ -82,7 +82,7 @@ impl <MapType: MapTrait> Board<MapType>{
         let event_sender_clone = board_events_sender.clone();
         let move_heads_timer_h = thread::spawn(move || {
         loop {
-            let event = Events::MoveHeadsTick{};
+            let event = Event::MoveHeadsTick{};
             event_sender_clone.send(event).unwrap();
             thread::sleep(Duration::from_secs(1));
             }
@@ -103,17 +103,17 @@ impl <MapType: MapTrait> Board<MapType>{
     pub fn run(&mut self) {
         while let Ok(evt) = self.board_events_receiver.recv() {
             match evt {
-                Events::SlideFrameTick => (),
-                Events::MoveHeadsTick => {
+                Event::SlideFrameTick => (),
+                Event::MoveHeadsTick => {
                     self.move_heads_handler(self.next_direction);
                 }
-                Events::SetNextHeadDir { direction } => {
+                Event::SetNextHeadDir { direction } => {
                     self.set_next_head_dir(direction);
                 }
-                Events::KillHead { id } => {
+                Event::KillHead { id } => {
                     self.kill_head_handler(id);
                 }
-                Events::AddHead {
+                Event::AddHead {
                     position,
                     coming_from,
                     parent_direction,

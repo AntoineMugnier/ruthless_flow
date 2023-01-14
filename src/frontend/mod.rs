@@ -21,13 +21,13 @@ pub struct Frontend{
     texture_context : G2dTextureContext,
     gfx_map : GfxMap,
     game_info_gfx : GameInfoGfx,
-    backend_event_sender: Sender<board::Events>,
+    backend_event_sender: Sender<board::Event>,
     frontend_event_receiver: Receiver<Event>,
 
 }
 impl Frontend{
 
-    pub fn new(gfx_map : GfxMap, backend_event_sender: Sender<board::Events>, frontend_event_receiver: Receiver<Event>
+    pub fn new(gfx_map : GfxMap, backend_event_sender: Sender<board::Event>, frontend_event_receiver: Receiver<Event>
     ) -> Frontend{
         
         let mut window: PistonWindow = 
@@ -99,7 +99,7 @@ impl Frontend{
 }
 
 fn send_next_direction(&mut self, direction : Direction){
-    let event = backend::board::Events::SetNextHeadDir { direction};
+    let event = backend::board::Event::SetNextHeadDir { direction};
     self.backend_event_sender.send(event).unwrap();
     
 }

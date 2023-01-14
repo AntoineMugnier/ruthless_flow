@@ -6,7 +6,7 @@ use super::map::{MapTrait, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 
 
-pub enum Events<'a, MapType: MapTrait> {
+pub enum Event<'a, MapType: MapTrait> {
     MoveHead {
         direction: Direction,
         prohibited_directions : DirectionFlags, // bitfield to hold already explored or forbidden directions
@@ -19,7 +19,7 @@ pub struct SimpleHead {
     id: Id,
     position: Coordinates,
     coming_from: Direction,
-    board_events_sender: Sender<board::Events>,
+    board_events_sender: Sender<board::Event>,
     head_split : bool
 
 }
@@ -29,9 +29,9 @@ pub trait Head: private::Sealed {
         id: Id,
         position: Coordinates,
         coming_from: Direction,
-        board_events_sender: Sender<board::Events>,
+        board_events_sender: Sender<board::Event>,
     ) -> Self;
-    fn dispatch(&mut self, event: Events<impl MapTrait>);
+    fn dispatch(&mut self, event: Event<impl MapTrait>);
     fn get_id(&mut self) -> Id;
 
 }
@@ -97,7 +97,7 @@ impl private::Sealed for SimpleHead {
 
         // Order the board to create a new head if the tile on which we are on a separator
         if self.head_split {
-            let add_head_event = board::Events::AddHead {
+            let add_head_event = board::Event::AddHead {
                 position: self.get_position(),
                 coming_from: self.get_provenance(),
                 parent_direction: chosen_direction,
@@ -110,7 +110,7 @@ impl private::Sealed for SimpleHead {
         match target_tile{
             // Order the board to kill self
             TileType::Marked => {
-                let remove_head_event = board::Events::KillHead { id: self.id };
+                let remove_head_event = board::Event::KillHead { id: self.id };
                 self.board_events_sender.send(remove_head_event).unwrap();
             }
             // Move the head to the location and mark the tile
@@ -155,7 +155,7 @@ impl Head for SimpleHead {
         id: Id,
         position: Coordinates,
         coming_from: Direction,
-        board_events_sender: Sender<board::Events>,
+        board_events_sender: Sender<board::Event>,
     ) -> SimpleHead { // TODO, initialize with map
         SimpleHead {
             id,
@@ -170,9 +170,9 @@ impl Head for SimpleHead {
         self.id
     }
 
-    fn dispatch(&mut self, event: Events<impl MapTrait>) {
+    fn dispatch(&mut self, event: Event<impl MapTrait>) {
         match event {
-            Events::MoveHead { direction, prohibited_directions, map } => {
+            Event::MoveHead { direction, prohibited_directions, map } => {
                 private::Sealed::move_head_handler(self, direction,prohibited_directions, map)
             }
         };
@@ -222,7 +222,7 @@ pub struct ToWall<'a>{pub ways: Vec<Way> ,pub picker_ctx : &'a PickerCtx}
 
 }
 
-fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_sender : &mut MockSender<board::Events>, tc: &test_conditions::General){
+fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_sender : &mut MockSender<board::Event>, tc: &test_conditions::General){
     let original_position = tc.previous_way.alt_target_position;
     let original_direction = tc.previous_way.alt_direction;
 
@@ -264,20 +264,20 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
     if let Some(_) = tc.on_separator{
         board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
             match board_event{
-            board::Events::AddHead { position, coming_from, parent_direction} => *position==original_position && *coming_from == original_direction.reverse() && *parent_direction==target_direction ,
+            board::Event::AddHead { position, coming_from, parent_direction} => *position==original_position && *coming_from == original_direction.reverse() && *parent_direction==target_direction ,
             _ => return false
         }
-        }).return_const(Result::<(), SendError<board::Events>>::Ok(()));
+        }).return_const(Result::<(), SendError<board::Event>>::Ok(()));
     }
 
     match tc.last_stage {
         test_conditions::LastStage::ToMarked{id:expected_id} => {
             board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
                 match board_event{
-                board::Events::KillHead {id} =>  *id == expected_id,
+                board::Event::KillHead {id} =>  *id == expected_id,
                 _ => return false
             }}
-            ).return_const(Result::<(), SendError<board::Events>>::Ok(()));
+            ).return_const(Result::<(), SendError<board::Event>>::Ok(()));
         },
         test_conditions::LastStage::ToFree | test_conditions::LastStage::ToSeparator => {
             map.expect_set_tile().once().in_sequence(seq)
@@ -406,7 +406,7 @@ fn test_basic_moves(){
 }
 
 fn dispatch_head_evt(head_going_to: Direction, map: &mut MockMapTrait, simple_head: &mut SimpleHead) {
-    let event = Events::MoveHead { direction: head_going_to, prohibited_directions : DirectionFlags::empty(),  map: map};
+    let event = Event::MoveHead { direction: head_going_to, prohibited_directions : DirectionFlags::empty(),  map: map};
     simple_head.dispatch(event);
 }
     

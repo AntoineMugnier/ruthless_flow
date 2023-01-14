@@ -30,7 +30,7 @@ impl <HeadType : Head> HeadList<HeadType>{
     pub fn add_head(&mut self,    
     position: Coordinates,
     coming_from: Direction,
-    events_sender: Sender<board::Events>)-> &mut HeadType{
+    events_sender: Sender<board::Event>)-> &mut HeadType{
 
         let mut free_slot_pos : Option<usize> = None;
 
