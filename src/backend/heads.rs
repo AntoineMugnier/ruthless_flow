@@ -72,12 +72,15 @@ impl private::Sealed for SimpleHead {
     }
 
     fn move_and_mark_tile(&mut self, map: &mut impl MapTrait, target_position: Coordinates, chosen_direction: Direction) {
-        map.set_tile(target_position, TileType::Marked);
+        map.set_tile(target_position, TileType::Head { id: self.id });
         self.set_position(target_position);
         self.set_provenance(chosen_direction.reverse());
     }
 
     fn move_head_handler(&mut self, direction: Direction, mut prohibited_directions : DirectionFlags, map: &mut impl MapTrait) {
+
+        //Set he current tile we leave as marked
+        map.set_tile(self.position, TileType::Marked);
 
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from); 
@@ -109,7 +112,7 @@ impl private::Sealed for SimpleHead {
         //Special action depending on the type of tile we reach
         match target_tile{
             // Order the board to kill self
-            TileType::Marked => {
+            TileType::Marked | TileType::Head{..} => {
                 let remove_head_event = board::Event::KillHead { id: self.id };
                 self.board_events_sender.send(remove_head_event).unwrap();
             }
@@ -135,7 +138,7 @@ impl private::Sealed for SimpleHead {
 
         if let Some((tile_type, target_position)) = map.get_neighbour_tile(original_position, chosen_direction) {
             match tile_type {
-                TileType::Free | TileType::Separator | TileType::Marked => return (chosen_direction, tile_type, target_position),
+                TileType::Free | TileType::Separator | TileType::Marked | TileType::Head{..} => return (chosen_direction, tile_type, target_position),
                 TileType::Wall => {
                     let chosen_direction = DirectionPicker::pick(prohibited_directions);
                     Self::explore_direction(original_position, chosen_direction, prohibited_directions, map)
@@ -209,9 +212,9 @@ pub enum FirstStage<'a>{
 pub struct OnSeparator{}
 
 pub enum LastStage{
-    ToMarked{id : Id},
-    ToFree,
-    ToSeparator
+    ToMarked{head_id : Id},
+    ToFree{head_id: Id},
+    ToSeparator{head_id: Id}
 }
 
 #[derive(Copy, Clone)]
@@ -229,6 +232,10 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
     let mut target_direction;
     let mut target_position;
     let mut target_tile;
+
+    map.expect_set_tile().once().in_sequence(seq)
+    .withf(move |position, tile_type| {*position == original_position && *tile_type == TileType::Marked})
+    .return_const(());
 
     match tc.first_stage{
         test_conditions::FirstStage::InvalidDir { way, picker_ctx } => {
@@ -271,7 +278,7 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
     }
 
     match tc.last_stage {
-        test_conditions::LastStage::ToMarked{id:expected_id} => {
+        test_conditions::LastStage::ToMarked{head_id:expected_id} => {
             board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
                 match board_event{
                 board::Event::KillHead {id} =>  *id == expected_id,
@@ -279,9 +286,9 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
             }}
             ).return_const(Result::<(), SendError<board::Event>>::Ok(()));
         },
-        test_conditions::LastStage::ToFree | test_conditions::LastStage::ToSeparator => {
+        test_conditions::LastStage::ToFree{head_id} | test_conditions::LastStage::ToSeparator{head_id} => {
             map.expect_set_tile().once().in_sequence(seq)
-            .withf(move |position, tile_type| {*position == target_position && *tile_type == TileType::Marked})
+            .withf(move |position, tile_type| {*position == target_position && *tile_type == TileType::Head { id : head_id}})
             .return_const(());
         }
     };
@@ -306,8 +313,9 @@ fn test_basic_moves(){
     let mut map = MockMapTrait::default();
     let mut board_board_events_sender = Sender::default();
     let picker_ctx  = DirectionPicker::pick_context();
-    // Test 0, Starting on Free Tile, normal move to free tile with chosen direction accepted
+    let head_id = 524;
 
+    // Test 0, Starting on Free Tile, normal move to free tile with chosen direction accepted
     let previous_way_0 = test_conditions::Way{alt_direction: Direction::Up, alt_target_position :Coordinates{x :10, y:10}, alt_target_tile : TileType::Marked};
     let target_way_0 = test_conditions::Way{alt_direction: Direction::Right, alt_target_position : Coordinates{x :11, y:10}, alt_target_tile : TileType::Free};
 
@@ -316,12 +324,12 @@ fn test_basic_moves(){
         first_stage: test_conditions::FirstStage::ValidDir{way: target_way_0},
         to_wall: None,
         on_separator: None,
-        last_stage : test_conditions::LastStage::ToFree
+        last_stage : test_conditions::LastStage::ToFree{head_id}
     };
 
-    // Test 1: Normal move to free tile with chosen direction accepted 
     test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc0);
-
+    
+    // Test 1: Normal move to free tile with chosen direction accepted 
     let previous_way_1 = target_way_0;
     let target_way_1 = test_conditions::Way{alt_direction: Direction::Up, alt_target_position : Coordinates{x :11, y:11}, alt_target_tile : TileType::Free};
 
@@ -331,12 +339,12 @@ fn test_basic_moves(){
             way: target_way_1},  
         to_wall : None,
         on_separator: None,
-        last_stage : test_conditions::LastStage::ToFree
+        last_stage : test_conditions::LastStage::ToFree{head_id}
     };
 
-    // Test 2: Chosen direction refused because it's backward leads to move to free tile
     test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc1);
 
+    // Test 2: Chosen direction refused because it's backward leads to move to free tile
     let previous_way_2 = target_way_1;
     let backward_way_2 = target_way_1.alt_direction.reverse();
     let target_way_2 = test_conditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :10, y:11}, alt_target_tile : TileType::Free};
@@ -346,7 +354,7 @@ fn test_basic_moves(){
         first_stage: test_conditions::FirstStage::InvalidDir{way: target_way_2 , picker_ctx: &picker_ctx},
         to_wall: None,
         on_separator: None,
-        last_stage : test_conditions::LastStage::ToFree
+        last_stage : test_conditions::LastStage::ToFree{head_id}
     };
 
     test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc2);
@@ -361,7 +369,7 @@ fn test_basic_moves(){
         first_stage: test_conditions::FirstStage::ValidDir{way: failed_target_way_3},
         to_wall: Some(test_conditions::ToWall{ways: vec![target_way_3], picker_ctx: &picker_ctx}),
         on_separator: None,
-        last_stage : test_conditions::LastStage::ToSeparator
+        last_stage : test_conditions::LastStage::ToSeparator{head_id}
 
     };
     test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc3);
@@ -376,20 +384,19 @@ fn test_basic_moves(){
         first_stage: test_conditions::FirstStage::ValidDir { way: target_way_4},
         to_wall: None,
         on_separator: Some(test_conditions::OnSeparator{}),
-        last_stage : test_conditions::LastStage::ToFree
+        last_stage : test_conditions::LastStage::ToFree{head_id}
     };
     test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc4);
 
     // Test 5: Chosen direction leads to marked tile and then to merge
     let previous_way_5 = target_way_4;
     let target_way_5 = test_conditions::Way{alt_direction: Direction::Down, alt_target_position : Coordinates{x :8, y:9}, alt_target_tile : TileType::Marked};
-    let head_id = 524;
     let tc5 = test_conditions::General{
         previous_way : previous_way_5,
         first_stage: test_conditions::FirstStage::ValidDir { way: target_way_5},
         on_separator: None,
         to_wall: None,
-        last_stage : test_conditions::LastStage::ToMarked{id:head_id},
+        last_stage : test_conditions::LastStage::ToMarked{head_id},
     };
     test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc5);
 

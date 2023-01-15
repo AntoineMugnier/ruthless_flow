@@ -2,8 +2,11 @@ use std::{collections::VecDeque};
 use crate::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
 use crate::frontend;
+
+use super::heads::Id;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
+    Head{id : Id},
     Marked,
     Free,
     Separator,

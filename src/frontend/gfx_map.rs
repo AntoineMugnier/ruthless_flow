@@ -42,6 +42,7 @@ impl GfxMap{
                     TileType::Free => tile_color = color::WHITE,
                     TileType::Separator => tile_color = color::BLUE,
                     TileType::Wall => tile_color = color::BLACK,
+                    TileType::Head{..} => tile_color = color::OLIVE
                 }
             
 
