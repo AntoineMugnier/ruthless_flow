@@ -10,11 +10,6 @@ pub struct GameInfoGfx{
     nb_heads : usize
 }
 
-pub enum Event{
-    UpdateCurrentUserDir,
-    UpdateNbHeads,
-}
-
 impl GameInfoGfx{
 
     pub fn new() -> GameInfoGfx{

@@ -14,7 +14,7 @@ pub enum Event {
     NewMapLine{line : Vec<TileType>},
     SetTile{position: Coordinates, tile_type: TileType},
     UserDirSet{direction : Direction},
-    UpdateNbHeads{nb_heads: usize}
+    UpdateNbHeads{nb_heads: usize},
 }
 pub struct Frontend{
     window: PistonWindow,

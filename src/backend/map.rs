@@ -42,6 +42,7 @@ impl MapTrait for Map {
     }
 
     fn slide(&mut self){
+        //let evt = frontend::Event::NewMapLine{line};
 
     }
 

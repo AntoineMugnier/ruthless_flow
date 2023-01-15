@@ -17,7 +17,6 @@ impl <HeadType : Head> HeadList<HeadType>{
     }
     
     pub fn get_nb_heads(&self) -> usize{
-
         self.nb_heads
     }
 

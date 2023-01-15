@@ -9,7 +9,7 @@ use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    SlideFrameTick,
+    SlideMapTick,
     KillHead {
         id: heads::Id,
     },
@@ -31,7 +31,8 @@ pub struct Board<MapType: MapTrait> {
     board_events_sender: Sender<Event>,
     frontend_events_sender: Sender<frontend::Event>,
     next_direction: Direction,
-    move_heads_timer_h: std::thread::JoinHandle<()>
+    move_heads_timer_h: std::thread::JoinHandle<()>,
+    slide_map_timer_h:  std::thread::JoinHandle<()>,
 }
 
 impl <MapType: MapTrait> Board<MapType>{
@@ -87,6 +88,16 @@ impl <MapType: MapTrait> Board<MapType>{
         let mut heads = HeadList::new();
         heads.add_head(first_head_position,Direction::Down, board_events_sender.clone());
 
+            // Spawn the thread that will trigger MoveHeadsTick every second
+            let event_sender_clone = board_events_sender.clone();
+            let slide_map_timer_h = thread::spawn(move || {
+            loop {
+                let event = Event::SlideMapTick{};
+                event_sender_clone.send(event).unwrap();
+                thread::sleep(Duration::from_secs(2));
+                }
+            });
+
         // Spawn the thread that will trigger MoveHeadsTick every second
         let event_sender_clone = board_events_sender.clone();
         let move_heads_timer_h = thread::spawn(move || {
@@ -104,7 +115,8 @@ impl <MapType: MapTrait> Board<MapType>{
             board_events_receiver,
             frontend_events_sender,
             next_direction: Direction::Up,
-            move_heads_timer_h
+            move_heads_timer_h,
+            slide_map_timer_h
         };
 
         board.send_current_nb_heads();
@@ -112,11 +124,14 @@ impl <MapType: MapTrait> Board<MapType>{
         board
     }
 
-
+    fn slide_map_handler(&mut self){
+        self.map.slide();
+    }
+    
     pub fn run(&mut self) {
         while let Ok(evt) = self.board_events_receiver.recv() {
             match evt {
-                Event::SlideFrameTick => (),
+                Event::SlideMapTick => self.slide_map_handler(),
                 Event::MoveHeadsTick => {
                     self.move_heads_handler(self.next_direction);
                 }
