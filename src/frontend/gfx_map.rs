@@ -91,7 +91,8 @@ impl GfxMap{
     }
 
     pub fn add_line(&mut self, line:Vec<TileType>){
-        self.sto.push_front(line)
+        self.sto.push_front(line);
+        self.sto.pop_back();
     }
 
 

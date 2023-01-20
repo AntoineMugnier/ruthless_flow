@@ -35,13 +35,13 @@ fn main() {
         vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,],
         vec![TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,TileType::Free,]]
     );
-    let map_nb_visible_lines = 14;
+    let map_nb_visible_lines = 13;
 
 
     let backend_event_sender_clone = backend_event_sender.clone(); // For the Board to post events to itself
     let frontend_event_sender_clone = frontend_event_sender.clone();
 
-    let  map = Map::new(frontend_event_sender,  sto.clone());
+    let  map = Map::new(frontend_event_sender,  sto.clone(),  map_nb_visible_lines);
 
     let gfx_map = GfxMap::new(sto);
     
