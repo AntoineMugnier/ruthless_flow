@@ -92,9 +92,9 @@ impl <MapType: MapTrait> Board<MapType>{
             let event_sender_clone = board_events_sender.clone();
             let slide_map_timer_h = thread::spawn(move || {
             loop {
-                //let event = Event::SlideMapTick{};
-                //event_sender_clone.send(event).unwrap();
-                //thread::sleep(Duration::from_secs(2));
+                thread::sleep(Duration::from_secs(2));
+                let event = Event::SlideMapTick{};
+                event_sender_clone.send(event).unwrap();
                 }
             });
 
