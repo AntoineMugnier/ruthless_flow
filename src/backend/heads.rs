@@ -57,6 +57,8 @@ mod private {
 impl private::Sealed for SimpleHead {
     fn set_position(&mut self, position: Coordinates) {
         self.position = position;
+        println!("{:?}", position);
+
     }
 
     fn set_provenance(&mut self, coming_from: Direction) {
