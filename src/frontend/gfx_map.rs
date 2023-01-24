@@ -1,17 +1,20 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, time::SystemTime};
 use piston_window::{Context,color, G2d, clear, rectangle, line, line_from_to, Position, rectangle_from_to, };
 use crate::{backend::{map::TileType}, utils::Coordinates};
 use super::config;
 
 pub struct GfxMap{
-    sto: VecDeque<Vec<TileType>>
+    sto: VecDeque<Vec<TileType>>,
+    time_at_last_line_received : SystemTime
 }
 
 impl GfxMap{
     pub fn new(sto : VecDeque<Vec<TileType>>) -> GfxMap{
         //Reverse Y axis
         let sto = sto.into_iter().rev().collect(); 
-        GfxMap{sto}
+        let time_at_last_line_received = SystemTime::now();
+
+        GfxMap{sto, time_at_last_line_received}
     }
 
     fn get_length(&self) -> usize {
@@ -34,28 +37,62 @@ impl GfxMap{
         let tile_height = (config::map::END_Y - config::map::ORIGIN_Y)/ (self.get_height() as f64);
         let tile_length = (config::map::END_X - config::map::ORIGIN_X)/ (self.get_length() as f64);
 
-        for (y_tile, line_of_tiles) in self.sto.iter().enumerate(){
-            for  (x_tile, tile) in line_of_tiles.iter().enumerate(){
-                let tile_color;
-                match tile {
-                    TileType::Marked => tile_color = color::RED,
-                    TileType::Free => tile_color = color::WHITE,
-                    TileType::Separator => tile_color = color::BLUE,
-                    TileType::Wall => tile_color = color::BLACK,
-                    TileType::Head{..} => tile_color = color::OLIVE
-                }
-            
-            let x_origin = config::map::ORIGIN_X + (x_tile as f64) * tile_length;
-            let x_end = x_origin + tile_length;
+        let time_elapsed_since_newer_line = self.time_at_last_line_received.elapsed().unwrap();
+        const TIME_ELAPSED_BETWEEN_TWO_NEW_LINES_MS :f64= 1.0/(crate::backend::config::MAP_SLIDE_FRQUENCY as f64) * 1000.0;
+        let time_ratio = (time_elapsed_since_newer_line.as_millis() as f64)/(TIME_ELAPSED_BETWEEN_TWO_NEW_LINES_MS as f64);
+        let first_tile_line_height = time_ratio * tile_height;
+        let last_tile_line_height = (1.0 -time_ratio) * tile_height;
 
-            let y_origin =config::map::ORIGIN_Y + (y_tile as f64) * tile_height;
-            let y_end = y_origin + tile_height;
+        let mut draw_tile = |x_origin, y_origin, new_tile_height, tile_type|{            
+            let x_end = x_origin + tile_length;
+            let y_end = y_origin + new_tile_height;
+
+            let tile_color;
+            match tile_type {
+                TileType::Marked => tile_color = color::RED,
+                TileType::Free => tile_color = color::WHITE,
+                TileType::Separator => tile_color = color::BLUE,
+                TileType::Wall => tile_color = color::BLACK,
+                TileType::Head{..} => tile_color = color::OLIVE
+            }
 
             rectangle_from_to(tile_color, 
                     [x_origin, y_origin],[x_end, y_end],
                     c.transform, g);
+        };
+
+        let mut y_origin = config::map::ORIGIN_Y;
+
+        for (line_index, line_of_tiles) in self.sto.iter().enumerate(){
+            let mut x_origin = config::map::ORIGIN_X;
+
+            //First line
+            if line_index == 0 {
+                for  tile_type in line_of_tiles.iter(){
+                    draw_tile(x_origin, y_origin, first_tile_line_height, *tile_type);
+                    x_origin+=tile_length;
+                }
+                y_origin += first_tile_line_height;
+            }
+
+            else if  line_index == (self.get_height() - 1){
+                for  tile_type in line_of_tiles.iter(){
+                    draw_tile(x_origin, y_origin, last_tile_line_height, *tile_type);
+                    x_origin+=tile_length;
+                }
+            }
+
+            else{
+                for  tile_type in line_of_tiles.iter(){
+                    draw_tile(x_origin, y_origin, tile_height, *tile_type);
+                    x_origin+=tile_length;
+                }
+                y_origin += tile_height;
             }
         }
+
+        //Last line 
+
     }
     
     fn render_grid(&mut self, c: &Context, g: &mut G2d){
@@ -65,7 +102,7 @@ impl GfxMap{
         line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::END_Y, config::map::END_X,  config::map::END_Y], c.transform, g);
         line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::END_X, config::map::END_Y, config::map::END_X,  config::map::ORIGIN_Y], c.transform, g);
         line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::END_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::ORIGIN_Y], c.transform, g);
-
+        /*
         //Draw mesh
         //Horizontal lines
         for mesh_line_index in 1..self.get_height(){
@@ -78,6 +115,7 @@ impl GfxMap{
             let mesh_col_origin_x = (mesh_col_index as f64/self.get_length() as f64) * (config::map::END_X - config::map::ORIGIN_X) + config::map::ORIGIN_X;
             line(color::BLACK, config::map::grid::BAR_WIDTH,  [mesh_col_origin_x, config::map::ORIGIN_Y, mesh_col_origin_x, config::map::END_Y], c.transform, g);
         }
+        */
     }
 
 
@@ -92,6 +130,7 @@ impl GfxMap{
     pub fn add_line(&mut self, line:Vec<TileType>){
         self.sto.push_front(line);
         self.sto.pop_back();
+        self.time_at_last_line_received = SystemTime::now()
     }
 
 
