@@ -1,3 +1,4 @@
+use super::config;
 use super::head_list::HeadList;
 use super::heads::{self, Head, SimpleHead};
 use super::map::{MapTrait};
@@ -92,7 +93,7 @@ impl <MapType: MapTrait> Board<MapType>{
             let event_sender_clone = board_events_sender.clone();
             let slide_map_timer_h = thread::spawn(move || {
             loop {
-                thread::sleep(Duration::from_secs(2));
+                thread::sleep(Duration::from_millis(1000/config::MAP_SLIDE_FRQUENCY));
                 let event = Event::SlideMapTick{};
                 event_sender_clone.send(event).unwrap();
                 }
@@ -104,7 +105,7 @@ impl <MapType: MapTrait> Board<MapType>{
         loop {
             let event = Event::MoveHeadsTick{};
             event_sender_clone.send(event).unwrap();
-            thread::sleep(Duration::from_secs(1));
+            thread::sleep(Duration::from_millis(1000/config::HEADS_MOVE_FREQUENCY));
             }
         });
 

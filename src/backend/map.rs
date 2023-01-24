@@ -50,26 +50,30 @@ impl MapTrait for Map {
     }
 
     fn slide(&mut self){
-        let new_line = self.sto[self.usable_map_lines + self.y_offset - 1].clone();
+
         self.sto.pop_front(); // Remove bottom line of the map
-        self.y_offset+=1; 
+        self.y_offset+=1;
+
         // Post new line to frontend
+        let new_line = self.sto[self.usable_map_lines - 1].clone(); 
+        println!("{:?}", new_line);
+
         let evt = frontend::Event::NewMapLine{line: new_line};
         self.frontend_sender.send(evt).unwrap();
     }
 
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
 
+        let position = Coordinates{ x: position.x, y:  position.y - self.y_offset};
 
         self.sto[position.y][position.x] = tile_type;
 
-        let position = Coordinates{ x: position.x, y:  position.y - self.y_offset};
         let event = frontend::Event::SetTile{position ,tile_type};
         self.frontend_sender.send(event).unwrap();
     }
 
     fn get_tile(&mut self, position: Coordinates) -> TileType {
-        self.sto[position.y][position.x]
+        self.sto[position.y - self.y_offset][position.x]
     }
 
     fn get_neighbour_tile(
@@ -78,7 +82,7 @@ impl MapTrait for Map {
         direction: Direction,
     ) -> Option<(TileType, Coordinates)> {
         let mut x = position.x as isize;
-        let mut y: isize = position.y as isize;
+        let mut y: isize = position.y as isize - self.y_offset as isize;
 
         match direction {
             Direction::Up => {
@@ -103,7 +107,7 @@ impl MapTrait for Map {
             let tile_type = self.sto[y as usize][x as usize];
             let position = Coordinates {
                 x: x as usize,
-                y: y as usize,
+                y: y as usize + self.y_offset,
             };
 
             Some((tile_type, position))

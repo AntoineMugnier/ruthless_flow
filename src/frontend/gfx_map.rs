@@ -45,7 +45,6 @@ impl GfxMap{
                     TileType::Head{..} => tile_color = color::OLIVE
                 }
             
-
             let x_origin = config::map::ORIGIN_X + (x_tile as f64) * tile_length;
             let x_end = x_origin + tile_length;
 
