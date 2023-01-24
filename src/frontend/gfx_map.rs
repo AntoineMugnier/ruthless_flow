@@ -5,16 +5,17 @@ use super::config;
 
 pub struct GfxMap{
     sto: VecDeque<Vec<TileType>>,
-    time_at_last_line_received : SystemTime
+    time_at_last_line_received : SystemTime,
+    map_nb_visible_lines : usize
 }
 
 impl GfxMap{
-    pub fn new(sto : VecDeque<Vec<TileType>>) -> GfxMap{
+    pub fn new(sto : VecDeque<Vec<TileType>>, map_nb_visible_lines : usize) -> GfxMap{
         //Reverse Y axis
         let sto = sto.into_iter().rev().collect(); 
         let time_at_last_line_received = SystemTime::now();
 
-        GfxMap{sto, time_at_last_line_received}
+        GfxMap{sto, time_at_last_line_received, map_nb_visible_lines}
     }
 
     fn get_length(&self) -> usize {
@@ -33,8 +34,8 @@ impl GfxMap{
     }
 
     fn render_tiles(&mut self, c: &Context, g: &mut G2d){
-
-        let tile_height = (config::map::END_Y - config::map::ORIGIN_Y)/ (self.get_height() as f64);
+    if self.sto.len() >= self.map_nb_visible_lines{
+        let tile_height = (config::map::END_Y - config::map::ORIGIN_Y)/ (self.get_height() as f64 - 1.0);
         let tile_length = (config::map::END_X - config::map::ORIGIN_X)/ (self.get_length() as f64);
 
         let time_elapsed_since_newer_line = self.time_at_last_line_received.elapsed().unwrap();
@@ -66,7 +67,7 @@ impl GfxMap{
         for (line_index, line_of_tiles) in self.sto.iter().enumerate(){
             let mut x_origin = config::map::ORIGIN_X;
 
-            //First line
+            // First line
             if line_index == 0 {
                 for  tile_type in line_of_tiles.iter(){
                     draw_tile(x_origin, y_origin, first_tile_line_height, *tile_type);
@@ -74,14 +75,14 @@ impl GfxMap{
                 }
                 y_origin += first_tile_line_height;
             }
-
+            // Last line
             else if  line_index == (self.get_height() - 1){
                 for  tile_type in line_of_tiles.iter(){
                     draw_tile(x_origin, y_origin, last_tile_line_height, *tile_type);
                     x_origin+=tile_length;
                 }
             }
-
+            // Others
             else{
                 for  tile_type in line_of_tiles.iter(){
                     draw_tile(x_origin, y_origin, tile_height, *tile_type);
@@ -91,8 +92,7 @@ impl GfxMap{
             }
         }
 
-        //Last line 
-
+    }
     }
     
     fn render_grid(&mut self, c: &Context, g: &mut G2d){

@@ -56,7 +56,6 @@ impl MapTrait for Map {
 
         // Post new line to frontend
         let new_line = self.sto[self.usable_map_lines - 1].clone(); 
-        println!("{:?}", new_line);
 
         let evt = frontend::Event::NewMapLine{line: new_line};
         self.frontend_sender.send(evt).unwrap();
