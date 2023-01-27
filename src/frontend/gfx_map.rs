@@ -10,9 +10,9 @@ pub struct GfxMap{
 }
 
 impl GfxMap{
-    pub fn new(sto : VecDeque<Vec<TileType>>, map_nb_visible_lines : usize) -> GfxMap{
+    pub fn new(map_nb_visible_lines : usize) -> GfxMap{
         //Reverse Y axis
-        let sto = sto.into_iter().rev().collect(); 
+        let sto = VecDeque::new(); 
         let time_at_last_line_received = SystemTime::now();
 
         GfxMap{sto, time_at_last_line_received, map_nb_visible_lines}
@@ -129,8 +129,10 @@ impl GfxMap{
 
     pub fn add_line(&mut self, line:Vec<TileType>){
         self.sto.push_front(line);
-        self.sto.pop_back();
-        self.time_at_last_line_received = SystemTime::now()
+        if self.sto.len() > self.map_nb_visible_lines{
+            self.sto.pop_back();
+        }
+        self.time_at_last_line_received = SystemTime::now();
     }
 
 

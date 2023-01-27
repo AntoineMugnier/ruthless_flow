@@ -265,20 +265,13 @@ fn main() {
     let frontend_event_sender_clone = frontend_event_sender.clone();
 
     let  map = Map::new(frontend_event_sender,  sto.clone(),  map_nb_visible_lines);
-
-    // Clone only the first visible lines of the map
-    let sto_with_only_first_visible_lines = &sto.as_slices().0[0..map_nb_visible_lines+1];
-    let mut sto_for_gfx_map = VecDeque::new();
-    sto_for_gfx_map.extend(sto_with_only_first_visible_lines.iter().cloned());
-
-    let gfx_map = GfxMap::new(sto_for_gfx_map, map_nb_visible_lines) ;
     
     thread::spawn(move || {
             let mut board: Board<Map>  = Board::new(map, backend_event_sender_clone, backend_receiver, frontend_event_sender_clone);
             board.run();
         });
 
-    let mut frontend = Frontend::new(gfx_map, backend_event_sender, frontend_event_receiver);
+    let mut frontend = Frontend::new(backend_event_sender, frontend_event_receiver, map_nb_visible_lines);
     frontend.run();
        
 }

@@ -28,8 +28,7 @@ pub struct Frontend{
 }
 impl Frontend{
 
-    pub fn new(gfx_map : GfxMap, backend_event_sender: Sender<board::Event>, frontend_event_receiver: Receiver<Event>
-    ) -> Frontend{
+    pub fn new(backend_event_sender: Sender<board::Event>, frontend_event_receiver: Receiver<Event>, map_nb_visible_lines : usize) -> Frontend{
         
         let mut window: PistonWindow = 
             WindowSettings::new("Ruthless Flow", config::SCREEN_SIZE)
@@ -39,8 +38,8 @@ impl Frontend{
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
         let mut texture_context = window.create_texture_context();
         let game_info_gfx = GameInfoGfx::new();
-        
-        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, backend_event_sender, frontend_event_receiver}
+        let gfx_map = GfxMap::new(map_nb_visible_lines);
+        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, backend_event_sender, frontend_event_receiver,}
     }
 
     pub fn run(&mut self) {

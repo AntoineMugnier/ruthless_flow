@@ -41,6 +41,14 @@ impl MapTrait for Map {
         sto: VecDeque<Vec<TileType>>,
         usable_map_lines : usize
     ) -> Self {
+
+        // Send fist visible lines to frontend
+        for i in 0..usable_map_lines{
+            let new_line = sto[i].clone(); 
+            let evt = frontend::Event::NewMapLine{line: new_line};
+            frontend_sender.send(evt).unwrap();            
+        }
+
         Map {
             frontend_sender,
             sto,
