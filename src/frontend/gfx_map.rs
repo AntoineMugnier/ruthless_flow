@@ -27,10 +27,9 @@ impl GfxMap{
     }
 
     pub fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
-        let y_max = self.get_height() - 1;
         
         // Set the tile according to the new referential 
-        self.sto[y_max - position.y ][position.x] = tile_type;
+        self.sto[position.y ][position.x] = tile_type;
     }
 
     fn render_tiles(&mut self, c: &Context, g: &mut G2d){
@@ -64,7 +63,7 @@ impl GfxMap{
 
         let mut y_origin = config::map::ORIGIN_Y;
 
-        for (line_index, line_of_tiles) in self.sto.iter().enumerate(){
+        for (line_index, line_of_tiles) in self.sto.iter().rev().enumerate(){
             let mut x_origin = config::map::ORIGIN_X;
 
             // First line
@@ -128,9 +127,9 @@ impl GfxMap{
     }
 
     pub fn add_line(&mut self, line:Vec<TileType>){
-        self.sto.push_front(line);
+        self.sto.push_back(line);
         if self.sto.len() > self.map_nb_visible_lines{
-            self.sto.pop_back();
+            self.sto.pop_front();
         }
         self.time_at_last_line_received = SystemTime::now();
     }
