@@ -14,6 +14,13 @@ pub mod map{
     pub mod grid{
         pub const BAR_WIDTH : f64 = 1.0;
     }
+    pub mod tiles{
+        pub const WALL_COLOR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+        pub const SEPARATOR_COLOR: [f32; 4] = [0.0, 0.0, 255.0, 1.0];
+        pub const HEAD_COLOR: [f32; 4] = [128.0, 128.0, 0.0, 1.0];
+        pub const HEAD_MARK_COLOR: [f32; 4] = [255.0, 0.0, 0.0, 1.0];
+        pub const FREE_COLOR: [f32; 4] = [255.0, 255.0, 255.0, 1.0];
+    }
 }
 pub mod game_info{
     pub const ORIGIN_X : f64 = 1100.0;

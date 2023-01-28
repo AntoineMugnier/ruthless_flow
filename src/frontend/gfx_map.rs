@@ -50,11 +50,11 @@ impl GfxMap{
 
             let tile_color;
             match tile_type {
-                TileType::Marked => tile_color = color::RED,
-                TileType::Free => tile_color = color::WHITE,
-                TileType::Separator => tile_color = color::BLUE,
-                TileType::Wall => tile_color = color::BLACK,
-                TileType::Head{..} => tile_color = color::OLIVE
+                TileType::Marked => tile_color = config::map::tiles::HEAD_MARK_COLOR,
+                TileType::Free => tile_color = config::map::tiles::FREE_COLOR,
+                TileType::Separator => tile_color = config::map::tiles::SEPARATOR_COLOR,
+                TileType::Wall => tile_color = config::map::tiles::WALL_COLOR,
+                TileType::Head{..} => tile_color = config::map::tiles::HEAD_COLOR
             }
 
             rectangle_from_to(tile_color, 
