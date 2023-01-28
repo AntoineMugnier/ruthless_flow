@@ -4,16 +4,18 @@ use crate::backend::map::TileType;
 
 enum ReadingResult{
     Tile(TileType),
-    CR
+    NewLine,
+    Ignored
 }
 
 fn read_char(character : char) -> ReadingResult{
     match character{
-    '\u{25A0}' => return ReadingResult::Tile(TileType::Wall),
-    '\u{25A1}' => return ReadingResult::Tile(TileType::Free),
-    '\u{25A3}' => return ReadingResult::Tile(TileType::Separator),
-    '\n' => return ReadingResult::CR,
-      _ => panic!("Unknown character in file")
+    '\u{25A3}' => return ReadingResult::Tile(TileType::Wall),
+    '\u{25A2}' => return ReadingResult::Tile(TileType::Free),
+    '\u{25A4}' => return ReadingResult::Tile(TileType::Separator),
+    '\n' => return ReadingResult::NewLine,
+    '\r' => return ReadingResult::Ignored, // Present in Windows only
+      _ => panic!("unknown character in file: {}", character)
     }
 }
 
@@ -31,7 +33,7 @@ pub fn read_map(path : &str) -> VecDeque<Vec<TileType>> {
             ReadingResult::Tile(tile) => {
                 line.push(tile);
             },
-            ReadingResult::CR =>{
+            ReadingResult::NewLine =>{
 
                 if let Some(line_standard_len) = line_standard_len_opt{
                     assert_eq!(line_standard_len, line.len(), "All lines of the files are not of the same length");
@@ -41,6 +43,7 @@ pub fn read_map(path : &str) -> VecDeque<Vec<TileType>> {
                 map_sto.push_front(line); 
                 line =  Vec::new();
             }
+            ReadingResult::Ignored => {/*NOP*/},
         }
     }
     map_sto
