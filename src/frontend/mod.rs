@@ -47,8 +47,9 @@ impl Frontend{
         while let Some(e) = self.window.next() {
             
             if let Some(args) = e.render_args() {
+                
                 self.window.draw_2d(&e, |c, g, device| {
-                    clear(color::WHITE, g);
+                    clear(config::BACKGROUND_COLOR, g);
                     self.gfx_map.render(&c, g);
                     self.game_info_gfx.render(&mut self.glyphs,  &c, g);
                     self.glyphs.factory.encoder.flush(device);

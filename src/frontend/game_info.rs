@@ -1,4 +1,4 @@
-use piston_window::{Context, G2d,line, color, text, DrawState, Transformed, glyph_cache::rusttype::GlyphCache, TextureSettings, Glyphs, Flip, Texture, G2dTexture, G2dTextureContext, image, rectangle::square, Image};
+use piston_window::{Context, G2d,line, color, text, DrawState, Transformed, glyph_cache::rusttype::GlyphCache, TextureSettings, Glyphs, Flip, Texture, G2dTexture, G2dTextureContext, image, rectangle::{square, self}, rectangle_from_to};
 use std::time::{SystemTime};
 
 use crate::utils::Direction;
@@ -44,7 +44,6 @@ impl GameInfoGfx{
 
     
     fn render_nb_heads(&mut self,  glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
-
 
         let transform = c.transform.trans(config::game_info::nb_heads::ORIGIN_X, config::game_info::nb_heads::ORIGIN_Y);
         let heads_str = format!("Heads: {}", self.nb_heads);
@@ -100,6 +99,10 @@ impl GameInfoGfx{
     }
 
     pub fn render(&mut self, glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
+        rectangle_from_to(config::game_info::BACKGROUND_COLOR, 
+            [config::game_info::ORIGIN_X, config::game_info::ORIGIN_Y],[config::game_info::END_X, config::game_info::END_Y],
+            c.transform, g);
+
         self.render_frame(c, g);
         self.render_user_direction(glyph_cache,c, g);
         self.render_time(glyph_cache, c, g);

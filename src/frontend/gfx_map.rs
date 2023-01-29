@@ -94,36 +94,20 @@ impl GfxMap{
     }
     }
     
-    fn render_grid(&mut self, c: &Context, g: &mut G2d){
+    fn render_frame(&mut self, c: &Context, g: &mut G2d){
 
         // Draw borders
-        line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::END_Y], c.transform, g);
-        line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::END_Y, config::map::END_X,  config::map::END_Y], c.transform, g);
-        line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::END_X, config::map::END_Y, config::map::END_X,  config::map::ORIGIN_Y], c.transform, g);
-        line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::END_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::ORIGIN_Y], c.transform, g);
-        /*
-        //Draw mesh
-        //Horizontal lines
-        for mesh_line_index in 1..self.get_height(){
-            let mesh_line_origin_y = (mesh_line_index as f64/self.get_height() as f64) * (config::map::END_Y - config::map::ORIGIN_Y) + config::map::ORIGIN_Y;
-            line(color::BLACK, config::map::grid::BAR_WIDTH,  [config::map::ORIGIN_X, mesh_line_origin_y, config::map::END_X,  mesh_line_origin_y], c.transform, g);
-        }
-        
-        //Vertical lines
-        for mesh_col_index in 1..self.get_length(){
-            let mesh_col_origin_x = (mesh_col_index as f64/self.get_length() as f64) * (config::map::END_X - config::map::ORIGIN_X) + config::map::ORIGIN_X;
-            line(color::BLACK, config::map::grid::BAR_WIDTH,  [mesh_col_origin_x, config::map::ORIGIN_Y, mesh_col_origin_x, config::map::END_Y], c.transform, g);
-        }
-        */
+        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::END_Y], c.transform, g);
+        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::END_Y, config::map::END_X,  config::map::END_Y], c.transform, g);
+        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::END_X, config::map::END_Y, config::map::END_X,  config::map::ORIGIN_Y], c.transform, g);
+        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::END_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::ORIGIN_Y], c.transform, g);
     }
-
-
 
     pub fn render(&mut self, c: &Context, g: &mut G2d){
 
         self.render_tiles(c, g);
 
-        self.render_grid(c, g);
+        self.render_frame(c, g);
     }
 
     pub fn add_line(&mut self, line:Vec<TileType>){
