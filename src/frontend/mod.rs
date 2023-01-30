@@ -42,6 +42,17 @@ impl Frontend{
         Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, backend_event_sender, frontend_event_receiver,}
     }
 
+    pub fn render_title( glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
+        let transform = c.transform.trans(config::title::ORIGIN_X, config::title::ORIGIN_Y);
+        let title = "Ruthless Flow";
+        text::Text::new_color(config::title::FONT_COLOR, config::title::FONT_SIZE).draw(&title,
+        glyph_cache,
+        &c.draw_state,
+        transform,
+        g).unwrap();
+
+    }
+    
     pub fn run(&mut self) {
         
         while let Some(e) = self.window.next() {
@@ -52,6 +63,7 @@ impl Frontend{
                     clear(config::BACKGROUND_COLOR, g);
                     self.gfx_map.render(&c, g);
                     self.game_info_gfx.render(&mut self.glyphs,  &c, g);
+                    Self::render_title(&mut self.glyphs,  &c, g);
                     self.glyphs.factory.encoder.flush(device);
 
                 });

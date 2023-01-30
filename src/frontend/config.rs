@@ -26,6 +26,13 @@ pub mod map{
         pub const FREE_COLOR: [f32; 4] = [255.0, 255.0, 255.0, 1.0];
     }
 }
+pub mod title{
+    pub const ORIGIN_X : f64 = 50.0;
+    pub const ORIGIN_Y : f64 = 100.0;
+    pub const FONT_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+    pub const FONT_SIZE: u32 = 48;
+
+}
 pub mod game_info{
     pub const ORIGIN_X : f64 = 1100.0;
     pub const ORIGIN_Y : f64 = super::map::ORIGIN_Y;
