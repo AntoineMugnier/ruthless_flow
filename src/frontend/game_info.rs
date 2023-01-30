@@ -19,10 +19,10 @@ impl GameInfoGfx{
 
     fn render_frame(&mut self, c: &Context, g: &mut G2d){
          // Draw borders
-         line(color::BLACK, config::game_info::frame::BAR_WIDTH,  [config::game_info::ORIGIN_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::END_Y], c.transform, g);
-         line(color::BLACK, config::game_info::frame::BAR_WIDTH,  [config::game_info::ORIGIN_X, config::game_info::END_Y, config::game_info::END_X,  config::game_info::END_Y], c.transform, g);
-         line(color::BLACK, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::END_Y, config::game_info::END_X,  config::game_info::ORIGIN_Y], c.transform, g);
-         line(color::BLACK, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::ORIGIN_Y], c.transform, g);
+         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::ORIGIN_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::END_Y], c.transform, g);
+         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::ORIGIN_X, config::game_info::END_Y, config::game_info::END_X,  config::game_info::END_Y], c.transform, g);
+         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::END_Y, config::game_info::END_X,  config::game_info::ORIGIN_Y], c.transform, g);
+         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::ORIGIN_Y], c.transform, g);
     }
 
     fn render_time(&mut self,  glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
@@ -35,7 +35,7 @@ impl GameInfoGfx{
         let transform = c.transform.trans(config::game_info::time::ORIGIN_X, config::game_info::time::ORIGIN_Y);
         let direction_str = format!("{:02}:{:02}:{:02}", minutes , seconds, centiseconds);
 
-        text::Text::new_color(color::BLACK, config::game_info::time::FONT_SIZE).draw(&direction_str,
+        text::Text::new_color(config::game_info::FONT_COLOR, config::game_info::time::FONT_SIZE).draw(&direction_str,
         glyph_cache,
         &c.draw_state,
         transform,
@@ -48,7 +48,7 @@ impl GameInfoGfx{
         let transform = c.transform.trans(config::game_info::nb_heads::ORIGIN_X, config::game_info::nb_heads::ORIGIN_Y);
         let heads_str = format!("Heads: {}", self.nb_heads);
 
-        text::Text::new_color(color::BLACK, config::game_info::nb_heads::FONT_SIZE).draw(&heads_str,
+        text::Text::new_color(config::game_info::FONT_COLOR, config::game_info::nb_heads::FONT_SIZE).draw(&heads_str,
         glyph_cache,
         &c.draw_state,
         transform,
@@ -69,7 +69,7 @@ impl GameInfoGfx{
             Direction::Left => arrow_char ='\u{2190}',
         }
     
-        text::Text::new_color(color::BLACK, config::game_info::dir::arrow::FONT_SIZE).draw(&arrow_char.to_string(),
+        text::Text::new_color(config::game_info::FONT_COLOR, config::game_info::dir::arrow::FONT_SIZE).draw(&arrow_char.to_string(),
         glyph_cache,
         &c.draw_state,
         transform,
@@ -81,7 +81,7 @@ impl GameInfoGfx{
         let mut draw_str = |str, x, y|{
         let transform = c.transform.trans(x, y);
         
-        text::Text::new_color(color::BLACK, config::game_info::dir::text::FONT_SIZE).draw(str,
+        text::Text::new_color(config::game_info::FONT_COLOR, config::game_info::dir::text::FONT_SIZE).draw(str,
         glyph_cache,
         &c.draw_state,
         transform,

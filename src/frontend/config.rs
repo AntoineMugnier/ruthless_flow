@@ -4,7 +4,7 @@ pub const WINDOW_LENGTH : u32 = 1280;
 pub const WINDOW_HEIGHT : u32 = 720;
 pub const SCREEN_SIZE : [u32;2] = [WINDOW_LENGTH, WINDOW_HEIGHT];
 
-pub const BACKGROUND_COLOR: [f32; 4] = [0.16, 0.21, 0.29, 1.0];
+pub const BACKGROUND_COLOR: [f32; 4] = [0.12, 0.16, 0.21, 1.0];
 
 pub mod map{
     pub const ORIGIN_X : f64 = 50.0;
@@ -14,15 +14,15 @@ pub mod map{
     pub const END_Y : f64 = 650.0;
 
     pub mod frame{
-        pub const BAR_WIDTH : f64 = 1.0;
+        pub const BAR_WIDTH : f64 = 0.5;
         pub const BAR_COLOR: [f32; 4] = [0.08, 0.12, 0.16, 1.0];
 
     }
     pub mod tiles{
-        pub const WALL_COLOR: [f32; 4] = [0.12, 0.16, 0.21, 1.0];
+        pub const WALL_COLOR: [f32; 4] = [0.16, 0.21, 0.29, 1.0];
         pub const SEPARATOR_COLOR: [f32; 4] = [0.0, 0.0, 255.0, 1.0];
-        pub const HEAD_COLOR: [f32; 4] = [128.0, 128.0, 0.0, 1.0];
-        pub const HEAD_MARK_COLOR: [f32; 4] = [255.0, 0.0, 0.0, 1.0];
+        pub const HEAD_COLOR: [f32; 4] = [0.70, 0.11, 0.11, 1.0];
+        pub const HEAD_MARK_COLOR: [f32; 4] = [0.42, 0.15, 0.15, 1.0];
         pub const FREE_COLOR: [f32; 4] = [255.0, 255.0, 255.0, 1.0];
     }
 }
@@ -33,11 +33,13 @@ pub mod game_info{
     pub const END_X : f64 = 1230.0;
     pub const END_Y : f64 = 400.0;
 
-    pub const BACKGROUND_COLOR: [f32; 4] = [255.0, 0.0, 0.0, 1.0];
+    pub const BACKGROUND_COLOR: [f32; 4] = [0.16, 0.21, 0.29, 1.0];
+    pub const FONT_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
 
     pub mod frame{
-        pub const BAR_WIDTH : f64 = 1.0;
+        pub const BAR_WIDTH : f64 = 0.5;
+        pub const BAR_COLOR: [f32; 4] = [0.08, 0.12, 0.16, 1.0];
     }
 
     pub mod time{

@@ -17,7 +17,10 @@ use crate::mpsc::{channel};
 #[cfg(not(test))]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    assert_ne!(args.len(), 1, "Missing map path argument");
+
     let map_path = &args[1];
+
 
     let (backend_event_sender, backend_receiver) = channel();
     let (frontend_event_sender, frontend_event_receiver) = channel();
