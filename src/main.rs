@@ -14,7 +14,6 @@ mod mpsc;
 #[cfg(not(test))]
 use crate::mpsc::{channel};
 
-#[cfg(not(test))]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     assert_ne!(args.len(), 1, "Missing map path argument");
@@ -25,10 +24,11 @@ fn main() {
     let (backend_event_sender, backend_receiver) = channel();
     let (frontend_event_sender, frontend_event_receiver) = channel();
 
-    let map_nb_visible_lines : usize = 13;
 
     let sto = read_map(map_path);
 
+    let map_nb_visible_lines : usize = ((crate::frontend::config::map::LENGTH_Y/crate::frontend::config::map::LENGTH_X) * (sto[0].len() as f64)) as usize;
+    println!("{}", map_nb_visible_lines);
     let backend_event_sender_clone = backend_event_sender.clone(); // For the Board to post events to itself
     let frontend_event_sender_clone = frontend_event_sender.clone();
 
