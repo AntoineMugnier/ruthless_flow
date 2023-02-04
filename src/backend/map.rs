@@ -3,6 +3,7 @@ use crate::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
 use crate::frontend;
 
+use super::board::EndGameReason;
 use super::heads::Id;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
@@ -26,6 +27,8 @@ pub trait MapTrait {
     fn get_length(&self) -> usize;
     fn get_height(&self) -> usize;
     fn slide(&mut self);
+    fn send_end_game_evt(&self, end_game_reason : EndGameReason);
+
 }
 
 pub struct Map {
@@ -57,9 +60,25 @@ impl MapTrait for Map {
         }
     }
 
+    fn send_end_game_evt(&self, end_game_reason : EndGameReason){
+        let event = frontend::Event::EndGame{game_end_reason: end_game_reason};
+        self.frontend_sender.send(event).unwrap();
+    }
+
     fn slide(&mut self){
 
-        self.sto.pop_front(); // Remove bottom line of the map
+        let last_line = self.sto.pop_front().unwrap(); // Remove bottom line of the map
+
+        // If a head tile has been popped out, stop game
+        for tile in last_line{
+            match tile {
+                TileType::Head {..} =>{
+                    self.send_end_game_evt(EndGameReason::HeadPoppedOutByRisingEdge)
+                }
+                _ =>{}
+            }
+        }
+
         self.y_offset+=1;
 
         // Post new line to frontend
@@ -82,6 +101,7 @@ impl MapTrait for Map {
     fn get_tile(&mut self, position: Coordinates) -> TileType {
         self.sto[position.y - self.y_offset][position.x]
     }
+
 
     fn get_neighbour_tile(
         &mut self,

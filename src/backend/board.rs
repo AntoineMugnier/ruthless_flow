@@ -23,7 +23,15 @@ pub enum Event {
     SetNextHeadDir {
         direction: Direction,
     },
+    EndGame{}
 }
+
+#[derive(Debug, Clone)]
+pub enum EndGameReason{
+    NoRemainingHeads,
+    HeadPoppedOutByRisingEdge
+}
+
 
 pub struct Board<MapType: MapTrait> {
     map: MapType,
@@ -48,14 +56,24 @@ impl <MapType: MapTrait> Board<MapType>{
         
     }
 
+    fn send_end_game_evt(&self, end_game_reason : EndGameReason){
+        let event = frontend::Event::EndGame{game_end_reason: end_game_reason};
+        self.frontend_events_sender.send(event).unwrap();
+    }
+
     fn send_current_nb_heads(&self){
         let event = frontend::Event::UpdateNbHeads{nb_heads: self.heads.get_nb_heads()};
         self.frontend_events_sender.send(event);
     }
     
-    fn kill_head_handler(&mut self, id: heads::Id) {
+    fn kill_head_handler(&mut self, id: heads::Id)   {
         self.heads.remove(id);
+
         self.send_current_nb_heads();
+        if(self.heads.get_nb_heads() ==0){
+            self.send_end_game_evt(EndGameReason::NoRemainingHeads);
+            
+        }
     }
 
     fn set_next_head_dir(&mut self, direction: Direction) {
@@ -63,14 +81,16 @@ impl <MapType: MapTrait> Board<MapType>{
         self.next_direction = direction;
         self.frontend_events_sender.send(frontend::Event::UserDirSet{direction});
         }
+        
     }
     
-    fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction) {
+    fn add_head_handler(&mut self, position: Coordinates, coming_from: Direction, parent_direction: Direction)  {
         let head = self.heads.add_head(position, coming_from, self.board_events_sender.clone());
         let event = heads::Event::MoveHead { direction: self.next_direction , prohibited_directions: DirectionFlags::from(parent_direction), map: &mut self.map};
         head.dispatch(event);
 
         self.send_current_nb_heads();
+        
     }
 
     pub fn new(
@@ -125,8 +145,9 @@ impl <MapType: MapTrait> Board<MapType>{
         board
     }
 
-    fn slide_map_handler(&mut self){
+    fn slide_map_handler(&mut self) {
         self.map.slide();
+        
     }
     
     pub fn run(&mut self) {
@@ -134,21 +155,22 @@ impl <MapType: MapTrait> Board<MapType>{
             match evt {
                 Event::SlideMapTick => self.slide_map_handler(),
                 Event::MoveHeadsTick => {
-                    self.move_heads_handler(self.next_direction);
+                    self.move_heads_handler(self.next_direction)
                 }
                 Event::SetNextHeadDir { direction } => {
-                    self.set_next_head_dir(direction);
+                    self.set_next_head_dir(direction)
                 }
                 Event::KillHead { id } => {
-                    self.kill_head_handler(id);
+                    self.kill_head_handler(id)
                 }
                 Event::AddHead {
                     position,
                     coming_from,
                     parent_direction,
                 } => {
-                    self.add_head_handler(position, coming_from, parent_direction);
-                }
+                    self.add_head_handler(position, coming_from, parent_direction)
+                },
+                Event::EndGame{} => {}
             }
         }
     }

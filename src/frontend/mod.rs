@@ -1,8 +1,8 @@
 extern crate piston_window;
 pub mod gfx_map;
 pub mod game_info;
-mod config;
-use crate::{utils::{Coordinates, Direction}, backend};
+pub mod config;
+use crate::{utils::{Coordinates, Direction}, backend::{self, board::EndGameReason}};
 use piston_window::{*, glyph_cache::rusttype::GlyphCache};
 
 use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
@@ -15,6 +15,7 @@ pub enum Event {
     SetTile{position: Coordinates, tile_type: TileType},
     UserDirSet{direction : Direction},
     UpdateNbHeads{nb_heads: usize},
+    EndGame{game_end_reason: board::EndGameReason}
 }
 pub struct Frontend{
     window: PistonWindow,
@@ -53,6 +54,10 @@ impl Frontend{
 
     }
     
+    pub fn end_game(&mut self, game_end_reason: EndGameReason ){
+        println!("{:?}", game_end_reason);
+    }
+
     pub fn run(&mut self) {
         
         while let Some(e) = self.window.next() {
@@ -83,7 +88,8 @@ impl Frontend{
                         }, 
                         Event::UpdateNbHeads { nb_heads } => {
                             self.game_info_gfx.update_nb_heads(nb_heads);
-                        }, 
+                        },
+                        Event::EndGame { game_end_reason } => {self.end_game(game_end_reason); return }, 
                     }
                 }
             }
