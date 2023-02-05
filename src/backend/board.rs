@@ -23,8 +23,7 @@ pub enum Event {
     SetNextHeadDir {
         direction: Direction,
     },
-    EndGame{}
-}
+    StartGame}
 
 #[derive(Debug, Clone)]
 pub enum EndGameReason{
@@ -40,8 +39,8 @@ pub struct Board<MapType: MapTrait> {
     board_events_sender: Sender<Event>,
     frontend_events_sender: Sender<frontend::Event>,
     next_direction: Direction,
-    move_heads_timer_h: std::thread::JoinHandle<()>,
-    slide_map_timer_h:  std::thread::JoinHandle<()>,
+    move_heads_timer_h: Option<std::thread::JoinHandle<()>>,
+    slide_map_timer_h:  Option<std::thread::JoinHandle<()>>,
 }
 
 impl <MapType: MapTrait> Board<MapType>{
@@ -92,7 +91,30 @@ impl <MapType: MapTrait> Board<MapType>{
         self.send_current_nb_heads();
         
     }
+    pub fn start_timers(&mut self){
+        // Spawn the thread that will trigger MoveHeadsTick every second
+        let event_sender_clone = self.board_events_sender.clone();
+        self.move_heads_timer_h = Some(thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(1000/config::HEADS_MOVE_FREQUENCY));
+            let event = Event::MoveHeadsTick{};
+            event_sender_clone.send(event).unwrap();
+            }
+        }));
 
+        // Spawn the thread that will trigger MoveHeadsTick every second
+        let event_sender_clone = self.board_events_sender.clone();
+        self.slide_map_timer_h = Some(thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(1000/config::MAP_SLIDE_FRQUENCY));
+            let event = Event::SlideMapTick{};
+            event_sender_clone.send(event).unwrap();
+            }
+        }));
+
+
+    }
+    
     pub fn new(
         map : MapType,
         board_events_sender: Sender<Event>,
@@ -108,27 +130,6 @@ impl <MapType: MapTrait> Board<MapType>{
 
         let mut heads = HeadList::new();
         heads.add_head(first_head_position,Direction::Down, board_events_sender.clone());
-
-            // Spawn the thread that will trigger MoveHeadsTick every second
-            let event_sender_clone = board_events_sender.clone();
-            let slide_map_timer_h = thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::from_millis(1000/config::MAP_SLIDE_FRQUENCY));
-                let event = Event::SlideMapTick{};
-                event_sender_clone.send(event).unwrap();
-                }
-            });
-
-        // Spawn the thread that will trigger MoveHeadsTick every second
-        let event_sender_clone = board_events_sender.clone();
-        let move_heads_timer_h = thread::spawn(move || {
-        loop {
-            let event = Event::MoveHeadsTick{};
-            event_sender_clone.send(event).unwrap();
-            thread::sleep(Duration::from_millis(1000/config::HEADS_MOVE_FREQUENCY));
-            }
-        });
-
         let board = Self {
             map,
             heads,
@@ -136,8 +137,8 @@ impl <MapType: MapTrait> Board<MapType>{
             board_events_receiver,
             frontend_events_sender,
             next_direction: Direction::Up,
-            move_heads_timer_h,
-            slide_map_timer_h
+            move_heads_timer_h: None,
+            slide_map_timer_h: None
         };
 
         board.send_current_nb_heads();
@@ -151,6 +152,16 @@ impl <MapType: MapTrait> Board<MapType>{
     }
     
     pub fn run(&mut self) {
+        while let Ok(evt) = self.board_events_receiver.recv() {
+            match evt {
+                Event::StartGame => {break}, // go to main handler
+                _ =>{}
+            }
+        }
+
+        // Enable timers that pace the application
+        self.start_timers();
+
         while let Ok(evt) = self.board_events_receiver.recv() {
             match evt {
                 Event::SlideMapTick => self.slide_map_handler(),
@@ -170,7 +181,7 @@ impl <MapType: MapTrait> Board<MapType>{
                 } => {
                     self.add_head_handler(position, coming_from, parent_direction)
                 },
-                Event::EndGame{} => {}
+                _ => {}
             }
         }
     }

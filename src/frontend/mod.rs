@@ -1,13 +1,20 @@
 extern crate piston_window;
 pub mod gfx_map;
 pub mod game_info;
+mod startup_screen;
 pub mod config;
 use crate::{utils::{Coordinates, Direction}, backend::{self, board::EndGameReason}};
 use piston_window::{*, glyph_cache::rusttype::GlyphCache};
 
 use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
 
-use self::{gfx_map::GfxMap, game_info::GameInfoGfx};
+use self::{gfx_map::GfxMap, game_info::GameInfoGfx, startup_screen::StartupScreen};
+
+enum GameStage{
+    Startup,
+    Playing,
+    Ending
+}
 
 #[derive(Debug)]
 pub enum Event {
@@ -23,9 +30,10 @@ pub struct Frontend{
     texture_context : G2dTextureContext,
     gfx_map : GfxMap,
     game_info_gfx : GameInfoGfx,
+    startup_screen : StartupScreen,
     backend_event_sender: Sender<board::Event>,
     frontend_event_receiver: Receiver<Event>,
-
+    current_game_stage : GameStage
 }
 impl Frontend{
 
@@ -40,7 +48,9 @@ impl Frontend{
         let mut texture_context = window.create_texture_context();
         let game_info_gfx = GameInfoGfx::new();
         let gfx_map = GfxMap::new(map_nb_visible_lines);
-        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, backend_event_sender, frontend_event_receiver,}
+        let current_game_stage = GameStage::Startup;
+        let startup_screen = StartupScreen::new();
+        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, startup_screen, backend_event_sender, frontend_event_receiver, current_game_stage}
     }
 
     pub fn render_title( glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
@@ -57,20 +67,80 @@ impl Frontend{
     pub fn end_game(&mut self, game_end_reason: EndGameReason ){
         println!("{:?}", game_end_reason);
     }
-
-    pub fn run(&mut self) {
-        
-        while let Some(e) = self.window.next() {
+    
+    pub fn run_startup(&mut self, e: impl GenericEvent ) {
             
             if let Some(args) = e.render_args() {
-                
                 self.window.draw_2d(&e, |c, g, device| {
-                    clear(config::BACKGROUND_COLOR, g);
-                    self.gfx_map.render(&c, g);
-                    self.game_info_gfx.render(&mut self.glyphs,  &c, g);
-                    Self::render_title(&mut self.glyphs,  &c, g);
-                    self.glyphs.factory.encoder.flush(device);
+                
+                // The board is always drawn
+                clear(config::BACKGROUND_COLOR, g);
+                Self::render_title(&mut self.glyphs,  &c, g);
+                self.gfx_map.render(&c, g);
+                self.startup_screen.render(&mut self.glyphs, &c, g);
+                self.glyphs.factory.encoder.flush(device);
 
+
+            });
+        }
+        
+            
+            if let Some(args) = e.update_args() {
+                while let Ok(evt) = self.frontend_event_receiver.try_recv() {
+                    match evt {
+                        Event::NewMapLine{line} =>{
+                            self.gfx_map.add_line(line);
+                        },
+                        _ =>{}
+                }
+            }
+        }
+        
+        if let Some(args) = e.press_args() {
+            match args {
+                Button::Keyboard(key) => {
+                    match key {
+                        Key::Return =>{
+                            self.start_game();
+                            return
+                        },
+                        _ => ()
+                    }
+                }
+                _ => ()
+        }
+    }
+}
+
+    fn start_game(&mut self) {
+        self.gfx_map.start_sliding();
+
+        // Inform backend that a game is started
+        let event = backend::board::Event::StartGame;
+        self.backend_event_sender.send(event).unwrap();
+
+        self.current_game_stage = GameStage::Playing;
+    }
+
+    pub fn run_game(&mut self, e : impl GenericEvent ) {
+        
+            
+            if let Some(args) = e.render_args() {
+                self.window.draw_2d(&e, |c, g, device| {
+                
+                // The board is always drawn
+                clear(config::BACKGROUND_COLOR, g);
+                Self::render_title(&mut self.glyphs,  &c, g);
+                self.gfx_map.render(&c, g);
+                self.game_info_gfx.render(&mut self.glyphs,  &c, g);
+                self.glyphs.factory.encoder.flush(device);
+
+                match self.current_game_stage{
+                    GameStage::Startup => self.startup_screen.render(&mut self.glyphs, &c, g),
+
+                    GameStage::Playing => {},
+                    GameStage::Ending => todo!(),
+                }
                 });
             }
             
@@ -116,7 +186,19 @@ impl Frontend{
                     _ => ()
                 }
             }
+    }
+
+    pub fn run(&mut self) {
+        while let Some(e) = self.window.next() {
+
+        match self.current_game_stage{
+            GameStage::Startup => self.run_startup(e),
+
+            GameStage::Playing => self.run_game(e),
+            GameStage::Ending => todo!(),
         }
+    }
+        
 
 }
 

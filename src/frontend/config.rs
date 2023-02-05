@@ -29,6 +29,20 @@ pub mod map{
         pub const FREE_COLOR: [f32; 4] = [255.0, 255.0, 255.0, 1.0];
     }
 }
+
+pub mod startup_screen{
+    pub const ORIGIN_X : f64 = 150.0;
+    pub const ORIGIN_Y : f64 = 200.0;
+
+    pub const LENGTH_X : f64 = 1000.0;
+    pub const LENGTH_Y : f64 = 500.0;
+
+    pub const END_X : f64 = ORIGIN_X + LENGTH_X;
+    pub const END_Y : f64 = ORIGIN_Y + LENGTH_Y;
+
+    pub const BACKGROUND_COLOR: [f32; 4] = [0.8,0.8,0.8, 1.0];
+
+}
 pub mod title{
     pub const ORIGIN_X : f64 = 50.0;
     pub const ORIGIN_Y : f64 = 100.0;
