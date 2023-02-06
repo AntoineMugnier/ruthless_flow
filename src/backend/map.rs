@@ -45,13 +45,6 @@ impl MapTrait for Map {
         usable_map_lines : usize
     ) -> Self {
 
-        // Send fist visible lines to frontend
-        for i in 0..usable_map_lines{
-            let new_line = sto[i].clone(); 
-            let evt = frontend::Event::NewMapLine{line: new_line};
-            frontend_sender.send(evt).unwrap();            
-        }
-
         Map {
             frontend_sender,
             sto,
@@ -81,10 +74,8 @@ impl MapTrait for Map {
 
         self.y_offset+=1;
 
-        // Post new line to frontend
-        let new_line = self.sto[self.usable_map_lines - 1].clone(); 
 
-        let evt = frontend::Event::NewMapLine{line: new_line};
+        let evt = frontend::Event::NewMapLine;
         self.frontend_sender.send(evt).unwrap();
     }
 

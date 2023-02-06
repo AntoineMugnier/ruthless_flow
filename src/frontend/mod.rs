@@ -18,7 +18,7 @@ enum GameStage{
 
 #[derive(Debug)]
 pub enum Event {
-    NewMapLine{line : Vec<TileType>},
+    NewMapLine,
     SetTile{position: Coordinates, tile_type: TileType},
     UserDirSet{direction : Direction},
     UpdateNbHeads{nb_heads: usize},
@@ -37,7 +37,7 @@ pub struct Frontend{
 }
 impl Frontend{
 
-    pub fn new(backend_event_sender: Sender<board::Event>, frontend_event_receiver: Receiver<Event>, map_nb_visible_lines : usize) -> Frontend{
+    pub fn new(backend_event_sender: Sender<board::Event>, frontend_event_receiver: Receiver<Event>, gfx_map : GfxMap) -> Frontend{
         
         let mut window: PistonWindow = 
             WindowSettings::new("Ruthless Flow", config::SCREEN_SIZE)
@@ -47,7 +47,6 @@ impl Frontend{
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
         let mut texture_context = window.create_texture_context();
         let game_info_gfx = GameInfoGfx::new();
-        let gfx_map = GfxMap::new(map_nb_visible_lines);
         let current_game_stage = GameStage::Startup;
         let startup_screen = StartupScreen::new();
         Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, startup_screen, backend_event_sender, frontend_event_receiver, current_game_stage}
@@ -88,9 +87,6 @@ impl Frontend{
             if let Some(args) = e.update_args() {
                 while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                     match evt {
-                        Event::NewMapLine{line} =>{
-                            self.gfx_map.add_line(line);
-                        },
                         _ =>{}
                 }
             }
@@ -137,7 +133,6 @@ impl Frontend{
 
                 match self.current_game_stage{
                     GameStage::Startup => self.startup_screen.render(&mut self.glyphs, &c, g),
-
                     GameStage::Playing => {},
                     GameStage::Ending => todo!(),
                 }
@@ -147,8 +142,8 @@ impl Frontend{
             if let Some(args) = e.update_args() {
                 while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                     match evt {
-                        Event::NewMapLine{line} =>{
-                            self.gfx_map.add_line(line);
+                        Event::NewMapLine =>{
+                            self.gfx_map.slide();
                         },
                         Event::SetTile { position, tile_type } =>{
                             self.gfx_map.set_tile(position, tile_type);

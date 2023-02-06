@@ -28,18 +28,18 @@ fn main() {
     let sto = read_map(map_path);
 
     let map_nb_visible_lines : usize = ((crate::frontend::config::map::LENGTH_Y/crate::frontend::config::map::LENGTH_X) * (sto[0].len() as f64)) as usize;
-    println!("{}", map_nb_visible_lines);
     let backend_event_sender_clone = backend_event_sender.clone(); // For the Board to post events to itself
     let frontend_event_sender_clone = frontend_event_sender.clone();
 
     let  map = Map::new(frontend_event_sender,  sto.clone(),  map_nb_visible_lines);
-    
+    let gfx_map = GfxMap::new(map_nb_visible_lines, sto);
+
     thread::spawn(move || {
             let mut board: Board<Map>  = Board::new(map, backend_event_sender_clone, backend_receiver, frontend_event_sender_clone);
             board.run();
         });
 
-    let mut frontend = Frontend::new(backend_event_sender, frontend_event_receiver, map_nb_visible_lines);
+    let mut frontend = Frontend::new(backend_event_sender, frontend_event_receiver, gfx_map);
     frontend.run();
        
 }
