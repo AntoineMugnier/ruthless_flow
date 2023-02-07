@@ -46,7 +46,6 @@ impl GfxMap{
                 }
 
                 sliding_ratio = (time_since_last_slide_ms as f64)/(TIME_ELAPSED_BETWEEN_TWO_NEW_LINES_MS as f64);
-                println!("{}", sliding_ratio);
                 
             },
             SlidingState::Disabled => sliding_ratio = 0.0, 
@@ -130,8 +129,7 @@ impl GfxMap{
     }
 
     pub fn start_sliding(&mut self){
-        //TODO delete
-        //self.sliding_state = SlidingState::Enabled{time_since_last_slide: SystemTime::now()};
+        self.sliding_state = SlidingState::Enabled{time_since_last_slide: SystemTime::now()};
 
     }
 

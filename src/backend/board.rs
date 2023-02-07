@@ -1,7 +1,7 @@
 use super::config;
 use super::head_list::HeadList;
 use super::heads::{self, Head, SimpleHead};
-use super::map::{MapTrait};
+use super::map::{MapTrait, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
 use crate::frontend;
@@ -77,8 +77,8 @@ impl <MapType: MapTrait> Board<MapType>{
 
     fn set_next_head_dir(&mut self, direction: Direction) {
         if direction != self.next_direction{
-        self.next_direction = direction;
-        self.frontend_events_sender.send(frontend::Event::UserDirSet{direction});
+            self.next_direction = direction;
+            self.frontend_events_sender.send(frontend::Event::UserDirSet{direction});
         }
         
     }
@@ -116,7 +116,7 @@ impl <MapType: MapTrait> Board<MapType>{
     }
     
     pub fn new(
-        map : MapType,
+        mut map : MapType,
         board_events_sender: Sender<Event>,
         board_events_receiver: Receiver<Event>,
         frontend_events_sender: Sender<frontend::Event>
@@ -130,6 +130,10 @@ impl <MapType: MapTrait> Board<MapType>{
 
         let mut heads = HeadList::new();
         heads.add_head(first_head_position,Direction::Down, board_events_sender.clone());
+        
+        //Set tile of the first head
+        map.set_tile(first_head_position, TileType::Head{id: 0});
+
         let board = Self {
             map,
             heads,
@@ -142,7 +146,7 @@ impl <MapType: MapTrait> Board<MapType>{
         };
 
         board.send_current_nb_heads();
-
+        
         board
     }
 

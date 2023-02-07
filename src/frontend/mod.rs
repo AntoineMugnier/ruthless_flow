@@ -87,6 +87,9 @@ impl Frontend{
             if let Some(args) = e.update_args() {
                 while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                     match evt {
+                        Event::SetTile { position, tile_type } =>{
+                            self.gfx_map.set_tile(position, tile_type);
+                        },
                         _ =>{}
                 }
             }
