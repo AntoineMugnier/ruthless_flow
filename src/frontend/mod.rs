@@ -1,5 +1,6 @@
 extern crate piston_window;
 pub mod gfx_map;
+mod utils;
 pub mod game_info;
 mod startup_screen;
 pub mod config;
@@ -45,7 +46,7 @@ impl Frontend{
             .graphics_api(OpenGL::V3_2)
             .build().unwrap();
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
-        let mut texture_context = window.create_texture_context();
+        let texture_context = window.create_texture_context();
         let game_info_gfx = GameInfoGfx::new();
         let current_game_stage = GameStage::Startup;
         let startup_screen = StartupScreen::new();

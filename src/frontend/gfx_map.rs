@@ -60,7 +60,7 @@ impl GfxMap{
         let tile_height = (config::map::END_Y - config::map::ORIGIN_Y)/  (self.map_nb_visible_lines as f64);
         let tile_length = (config::map::END_X - config::map::ORIGIN_X)/ (self.get_length() as f64);
 
-        let mut draw_tile = |x_origin, y_origin, new_tile_height, tile_type|{            
+        let mut draw_tile = |x_origin, y_origin, new_tile_height, tile_type|{
             let x_end = x_origin + tile_length;
             let y_end = y_origin + new_tile_height;
 
@@ -112,20 +112,12 @@ impl GfxMap{
         }
     }
     
-    fn render_frame(&mut self, c: &Context, g: &mut G2d){
-
-        // Draw borders
-        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::END_Y], c.transform, g);
-        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::ORIGIN_X, config::map::END_Y, config::map::END_X,  config::map::END_Y], c.transform, g);
-        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::END_X, config::map::END_Y, config::map::END_X,  config::map::ORIGIN_Y], c.transform, g);
-        line(config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH,  [config::map::END_X, config::map::ORIGIN_Y, config::map::ORIGIN_X,  config::map::ORIGIN_Y], c.transform, g);
-    }
 
     pub fn render(&mut self, c: &Context, g: &mut G2d){
 
         self.render_tiles(c, g);
 
-        self.render_frame(c, g);
+        super::utils::draw_frame([config::map::ORIGIN_X, config::map::ORIGIN_Y, config::map::END_X,  config::map::END_Y], config::map::frame::BAR_COLOR, config::map::frame::BAR_WIDTH, c, g );
     }
 
     pub fn start_sliding(&mut self){

@@ -17,14 +17,6 @@ impl GameInfoGfx{
         GameInfoGfx{direction: Direction::Up, init_time : SystemTime::now(), nb_heads: 0}
     }
 
-    fn render_frame(&mut self, c: &Context, g: &mut G2d){
-         // Draw borders
-         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::ORIGIN_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::END_Y], c.transform, g);
-         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::ORIGIN_X, config::game_info::END_Y, config::game_info::END_X,  config::game_info::END_Y], c.transform, g);
-         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::END_Y, config::game_info::END_X,  config::game_info::ORIGIN_Y], c.transform, g);
-         line(config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH,  [config::game_info::END_X, config::game_info::ORIGIN_Y, config::game_info::ORIGIN_X,  config::game_info::ORIGIN_Y], c.transform, g);
-    }
-
     fn render_time(&mut self,  glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
 
         let time_elapsed =self.init_time.elapsed().unwrap().as_millis();
@@ -40,6 +32,7 @@ impl GameInfoGfx{
         &c.draw_state,
         transform,
         g).unwrap();
+
     }
 
     
@@ -103,7 +96,7 @@ impl GameInfoGfx{
             [config::game_info::ORIGIN_X, config::game_info::ORIGIN_Y],[config::game_info::END_X, config::game_info::END_Y],
             c.transform, g);
 
-        self.render_frame(c, g);
+        super::utils::draw_frame([config::game_info::ORIGIN_X, config::game_info::ORIGIN_Y, config::game_info::END_X,  config::game_info::END_Y], config::game_info::frame::BAR_COLOR, config::game_info::frame::BAR_WIDTH, c, g );
         self.render_user_direction(glyph_cache,c, g);
         self.render_time(glyph_cache, c, g);
         self.render_nb_heads(glyph_cache, c, g);

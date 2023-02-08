@@ -19,7 +19,6 @@ pub mod map{
     pub mod frame{
         pub const BAR_WIDTH : f64 = 0.5;
         pub const BAR_COLOR: [f32; 4] = [0.08, 0.12, 0.16, 1.0];
-
     }
     pub mod tiles{
         pub const WALL_COLOR: [f32; 4] = [0.16, 0.21, 0.29, 1.0];
@@ -31,16 +30,33 @@ pub mod map{
 }
 
 pub mod startup_screen{
-    pub const ORIGIN_X : f64 = 150.0;
-    pub const ORIGIN_Y : f64 = 200.0;
+    pub const ORIGIN_X : f64 = 360.0;
+    pub const ORIGIN_Y : f64 = 210.0;
 
-    pub const LENGTH_X : f64 = 1000.0;
-    pub const LENGTH_Y : f64 = 500.0;
+    pub const LENGTH_X : f64 = 1020.0;
+    pub const LENGTH_Y : f64 = 700.0;
 
     pub const END_X : f64 = ORIGIN_X + LENGTH_X;
     pub const END_Y : f64 = ORIGIN_Y + LENGTH_Y;
+    pub mod frame{
+        pub const BAR_WIDTH : f64 = 0.5;
+        pub const BAR_COLOR: [f32; 4] = [0.08, 0.12, 0.16, 1.0];
+    }
 
-    pub const BACKGROUND_COLOR: [f32; 4] = [0.8,0.8,0.8, 1.0];
+    pub mod title{
+        pub const ORIGIN_X : f64 = super::ORIGIN_X + 425.0;
+        pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 80.0;
+        pub const FONT_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+        pub const FONT_SIZE: u32 = 36;
+    }
+
+    pub mod description{
+        pub const ORIGIN_X : f64 = super::ORIGIN_X + 50.0;
+        pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 150.0;
+        pub const FONT_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+        pub const FONT_SIZE: u32 = 18;
+    }
+    pub const BACKGROUND_COLOR: [f32; 4] = [0.4,0.4,0.4, 1.0];
 
 }
 pub mod title{
