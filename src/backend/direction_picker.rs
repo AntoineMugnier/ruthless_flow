@@ -38,6 +38,8 @@ mod private{
         // Select a random direction among available ones
         let mut rng = thread_rng();
 
+        assert!(dir_vec.len() !=0, "head  has no way to go");
+
         let random_index = rng.gen_range(0..dir_vec.len());
         let picked_direction = dir_vec[random_index];
 

@@ -45,6 +45,7 @@ mod private {
         fn get_provenance(&self) -> Direction;
         fn move_head_handler(&mut self, direction: Direction, prohibited_directions : DirectionFlags, map: &mut impl MapTrait);
         fn explore_direction(
+            &self,
             position: Coordinates,
             chosen_direction: Direction,
             prohibited_directions: &mut DirectionFlags,
@@ -80,7 +81,7 @@ impl private::Sealed for SimpleHead {
     fn move_head_handler(&mut self, direction: Direction, mut prohibited_directions : DirectionFlags, map: &mut impl MapTrait) {
 
         //Set he current tile we leave as marked
-        map.set_tile(self.position, TileType::Marked);
+        map.set_tile(self.position, TileType::Marked{id: self.id});
 
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from); 
@@ -96,7 +97,7 @@ impl private::Sealed for SimpleHead {
             }
 
         // Try to explore explore the `proposed_direction`. If the move is impossible, explore all the other authorized directions around the head.
-        let (chosen_direction, target_tile, target_position) = Self::explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map);
+        let (chosen_direction, target_tile, target_position) = self.explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map);
 
         // Order the board to create a new head if the tile on which we are on a separator
         if self.head_split {
@@ -112,7 +113,7 @@ impl private::Sealed for SimpleHead {
         //Special action depending on the type of tile we reach
         match target_tile{
             // Order the board to kill self
-            TileType::Marked | TileType::Head{..} => {
+            TileType::Marked{..} | TileType::Head{..} => {
                 let remove_head_event = board::Event::KillHead { id: self.id };
                 self.board_events_sender.send(remove_head_event).unwrap();
             }
@@ -124,12 +125,12 @@ impl private::Sealed for SimpleHead {
                 self.move_and_mark_tile(map, target_position, chosen_direction);
                 self.head_split = true;
             },
-            TileType::Wall => assert!(true, "Cannot move to a wall"),
+            TileType::Wall => panic!("Cannot move to a wall"),
         }
         
     }
 
-    fn explore_direction(
+    fn explore_direction(&self,
         original_position: Coordinates,
         chosen_direction: Direction,
         prohibited_directions: &mut DirectionFlags,
@@ -138,17 +139,26 @@ impl private::Sealed for SimpleHead {
 
         if let Some((tile_type, target_position)) = map.get_neighbour_tile(original_position, chosen_direction) {
             match tile_type {
-                TileType::Free | TileType::Separator | TileType::Marked | TileType::Head{..} => return (chosen_direction, tile_type, target_position),
+                TileType::Free | TileType::Separator | TileType::Head{..} => return (chosen_direction, tile_type, target_position),
+                TileType::Marked{id} =>{ 
+                    if id == self.id{
+                        let chosen_direction = DirectionPicker::pick(prohibited_directions);
+                        self.explore_direction(original_position, chosen_direction, prohibited_directions, map)
+                    }
+                    else{
+                        return (chosen_direction, tile_type, target_position)
+                    }
+            },
                 TileType::Wall => {
                     let chosen_direction = DirectionPicker::pick(prohibited_directions);
-                    Self::explore_direction(original_position, chosen_direction, prohibited_directions, map)
+                    self.explore_direction(original_position, chosen_direction, prohibited_directions, map)
                 },
             }
         }
         // We are targetting an edge of the map
         else {
             let chosen_direction = DirectionPicker::pick(prohibited_directions);
-            Self::explore_direction(original_position, chosen_direction, prohibited_directions, map)
+            self.explore_direction(original_position, chosen_direction, prohibited_directions, map)
         }
     }
 }

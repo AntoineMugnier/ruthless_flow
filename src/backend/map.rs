@@ -8,7 +8,7 @@ use super::heads::Id;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
     Head{id : Id},
-    Marked,
+    Marked{id : Id},
     Free,
     Separator,
     Wall,
@@ -61,7 +61,6 @@ impl MapTrait for Map {
     fn slide(&mut self){
 
         let last_line = self.sto.pop_front().unwrap(); // Remove bottom line of the map
-
         // If a head tile has been popped out, stop game
         for tile in last_line{
             match tile {

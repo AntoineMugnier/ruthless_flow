@@ -1,6 +1,6 @@
 pub mod board;
 pub mod map;
-mod heads;
+pub mod heads;
 mod direction_picker;
 mod head_list;
 pub mod config;

@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::{SystemTime, Duration}};
 use piston_window::{Context,color, G2d, clear, rectangle, line, line_from_to, Position, rectangle_from_to, };
-use crate::{backend::{map::TileType}, utils::Coordinates};
+use crate::{backend::{heads::Id,map::TileType}, utils::Coordinates};
 use super::config;
 
 pub struct GfxMap{
@@ -54,6 +54,23 @@ impl GfxMap{
         self.render_sliding_map(c, g, sliding_ratio);
     }
     
+    fn get_head_mark_color_with_id(id : crate::backend::heads::Id) -> [f32;4]{
+        match id {
+            0 => config::map::tiles::HEAD_MARK_COLOR_0,
+            1 => config::map::tiles::HEAD_MARK_COLOR_1,
+            2 => config::map::tiles::HEAD_MARK_COLOR_2,
+            _ => config::map::tiles::HEAD_MARK_COLOR_3 
+        }
+    }
+
+    fn get_head_color_with_id(id : crate::backend::heads::Id) -> [f32;4]{
+        match id {
+            0 => config::map::tiles::HEAD_COLOR_0,
+            1 => config::map::tiles::HEAD_COLOR_1,
+            2 => config::map::tiles::HEAD_COLOR_2,
+            _ => config::map::tiles::HEAD_COLOR_3 
+        }
+    }
 
     fn render_sliding_map(&mut self, c: &Context, g: &mut G2d, sliding_ratio: f64) {
 
@@ -66,11 +83,11 @@ impl GfxMap{
 
             let tile_color;
             match tile_type {
-                TileType::Marked => tile_color = config::map::tiles::HEAD_MARK_COLOR,
                 TileType::Free => tile_color = config::map::tiles::FREE_COLOR,
                 TileType::Separator => tile_color = config::map::tiles::SEPARATOR_COLOR,
                 TileType::Wall => tile_color = config::map::tiles::WALL_COLOR,
-                TileType::Head{..} => tile_color = config::map::tiles::HEAD_COLOR
+                TileType::Marked{id} => tile_color = Self::get_head_mark_color_with_id(id),
+                TileType::Head{id} => tile_color = Self::get_head_color_with_id(id)
             }
 
             rectangle_from_to(tile_color, 

@@ -23,9 +23,16 @@ pub mod map{
     pub mod tiles{
         pub const WALL_COLOR: [f32; 4] = [0.16, 0.21, 0.29, 1.0];
         pub const SEPARATOR_COLOR: [f32; 4] = [0.0, 0.0, 255.0, 1.0];
-        pub const HEAD_COLOR: [f32; 4] = [0.70, 0.11, 0.11, 1.0];
-        pub const HEAD_MARK_COLOR: [f32; 4] = [0.42, 0.15, 0.15, 1.0];
         pub const FREE_COLOR: [f32; 4] = [255.0, 255.0, 255.0, 1.0];
+
+        pub const HEAD_COLOR_0: [f32; 4] = [0.70, 0.11, 0.11, 1.0];
+        pub const HEAD_MARK_COLOR_0: [f32; 4] = [0.42, 0.15, 0.15, 1.0];
+        pub const HEAD_COLOR_1: [f32; 4] = [0.11, 0.70, 0.11, 1.0];
+        pub const HEAD_MARK_COLOR_1: [f32; 4] = [0.15, 0.42, 0.15, 1.0];
+        pub const HEAD_COLOR_2: [f32; 4] = [0.70, 0.70, 0.11, 1.0];
+        pub const HEAD_MARK_COLOR_2: [f32; 4] = [0.42, 0.42, 0.15, 1.0];
+        pub const HEAD_COLOR_3: [f32; 4] = [0.70, 0.11, 0.11, 1.0];
+        pub const HEAD_MARK_COLOR_3: [f32; 4] = [0.42, 0.15, 0.15, 1.0];
     }
 }
 
