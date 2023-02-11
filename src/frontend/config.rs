@@ -31,8 +31,8 @@ pub mod map{
         pub const HEAD_MARK_COLOR_1: [f32; 4] = [0.15, 0.42, 0.15, 1.0];
         pub const HEAD_COLOR_2: [f32; 4] = [0.70, 0.70, 0.11, 1.0];
         pub const HEAD_MARK_COLOR_2: [f32; 4] = [0.42, 0.42, 0.15, 1.0];
-        pub const HEAD_COLOR_3: [f32; 4] = [0.70, 0.11, 0.11, 1.0];
-        pub const HEAD_MARK_COLOR_3: [f32; 4] = [0.42, 0.15, 0.15, 1.0];
+        pub const HEAD_COLOR_3: [f32; 4] = [0.11,  0.70,  0.70, 1.0];
+        pub const HEAD_MARK_COLOR_3: [f32; 4] = [0.15, 0.42, 0.42, 1.0];
     }
 }
 
