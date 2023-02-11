@@ -50,8 +50,12 @@ mod private {
             chosen_direction: Direction,
             prohibited_directions: &mut DirectionFlags,
             map: &mut impl MapTrait,
-        ) -> (Direction, TileType, Coordinates);
+        ) -> Option<(Direction, TileType, Coordinates)>;
         fn move_and_mark_tile(&mut self, map: &mut impl MapTrait, target_position: Coordinates, chosen_direction: Direction);
+        fn continue_exploring_if_any_direction_is_available(&self,
+            original_position: Coordinates,
+              prohibited_directions: &mut DirectionFlags,
+              map: &mut impl MapTrait) -> Option<(Direction, TileType, Coordinates)>;
     }
 }
 
@@ -80,16 +84,20 @@ impl private::Sealed for SimpleHead {
 
     fn move_head_handler(&mut self, direction: Direction, mut prohibited_directions : DirectionFlags, map: &mut impl MapTrait) {
 
-        //Set he current tile we leave as marked
-        map.set_tile(self.position, TileType::Marked{id: self.id});
-
         // Prevent head from going back to its previous path
         prohibited_directions.insert(self.coming_from); 
 
         // Check if the direction sent to the function is not prohibited
         let proposed_direction;
             if prohibited_directions.contains(direction){
-                proposed_direction = DirectionPicker::pick(&mut prohibited_directions);
+                if let Some(picked_dir) = DirectionPicker::pick(&mut prohibited_directions){
+                    proposed_direction = picked_dir;
+                }
+                //If we run out of possible moves, the head does not move this turn
+                else{
+                    println!("runs out");
+                    return
+                }
             }
             else{
                 proposed_direction = direction;
@@ -97,68 +105,81 @@ impl private::Sealed for SimpleHead {
             }
 
         // Try to explore explore the `proposed_direction`. If the move is impossible, explore all the other authorized directions around the head.
-        let (chosen_direction, target_tile, target_position) = self.explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map);
+        if let Some((chosen_direction, target_tile, target_position)) = self.explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map){
 
-        // Order the board to create a new head if the tile on which we are on a separator
-        if self.head_split {
-            let add_head_event = board::Event::AddHead {
-                position: self.get_position(),
-                coming_from: self.get_provenance(),
-                parent_direction: chosen_direction,
-            };
-            self.board_events_sender.send(add_head_event).unwrap();
-            self.head_split = false;
-        }
-
-        //Special action depending on the type of tile we reach
-        match target_tile{
-            // Order the board to kill self
-            TileType::Marked{..} | TileType::Head{..} => {
-                let remove_head_event = board::Event::KillHead { id: self.id };
-                self.board_events_sender.send(remove_head_event).unwrap();
+            // Order the board to create a new head if the tile on which we are on a separator
+            if self.head_split {
+                let add_head_event = board::Event::AddHead {
+                    position: self.get_position(),
+                    coming_from: self.get_provenance(),
+                    parent_direction: chosen_direction,
+                };
+                self.board_events_sender.send(add_head_event).unwrap();
+                self.head_split = false;
             }
-            // Move the head to the location and mark the tile
-            TileType::Free =>  {
-                self.move_and_mark_tile(map, target_position, chosen_direction);
-            },
-            TileType::Separator =>  {
-                self.move_and_mark_tile(map, target_position, chosen_direction);
-                self.head_split = true;
-            },
-            TileType::Wall => panic!("Cannot move to a wall"),
+
+            //Set he current tile we leave as marked
+            map.set_tile(self.position, TileType::Marked{id: self.id});
+
+            //Special action depending on the type of tile we reach
+            match target_tile{
+                // Order the board to kill self
+                TileType::Marked{..} | TileType::Head{..} => {
+                    let remove_head_event = board::Event::KillHead { id: self.id };
+                    self.board_events_sender.send(remove_head_event).unwrap();
+                }
+                // Move the head to the location and mark the tile
+                TileType::Free =>  {
+                    self.move_and_mark_tile(map, target_position, chosen_direction);
+                },
+                TileType::Separator =>  {
+                    self.move_and_mark_tile(map, target_position, chosen_direction);
+                    self.head_split = true;
+                },
+                TileType::Wall => panic!("Cannot move to a wall"),
+            }
         }
         
     }
+    fn continue_exploring_if_any_direction_is_available(&self,
+        original_position: Coordinates,
+          prohibited_directions: &mut DirectionFlags,
+          map: &mut impl MapTrait) -> Option<(Direction, TileType, Coordinates)>{
+        if let Some(picked_dir) = DirectionPicker::pick(prohibited_directions){
+            return self.explore_direction(original_position, picked_dir, prohibited_directions, map)
+        }
+        else{
+            return None;
+        }
+    }
 
+    
     fn explore_direction(&self,
         original_position: Coordinates,
         chosen_direction: Direction,
         prohibited_directions: &mut DirectionFlags,
         map: &mut impl MapTrait,
-    ) -> (Direction, TileType, Coordinates) {
+    ) -> Option<(Direction, TileType, Coordinates)> {
 
         if let Some((tile_type, target_position)) = map.get_neighbour_tile(original_position, chosen_direction) {
             match tile_type {
-                TileType::Free | TileType::Separator | TileType::Head{..} => return (chosen_direction, tile_type, target_position),
+                TileType::Free | TileType::Separator => return Some((chosen_direction, tile_type, target_position)),
                 TileType::Marked{id} =>{ 
                     if id == self.id{
-                        let chosen_direction = DirectionPicker::pick(prohibited_directions);
-                        self.explore_direction(original_position, chosen_direction, prohibited_directions, map)
+                       self.continue_exploring_if_any_direction_is_available(original_position, prohibited_directions, map)
                     }
                     else{
-                        return (chosen_direction, tile_type, target_position)
+                        return Some((chosen_direction, tile_type, target_position))
                     }
             },
-                TileType::Wall => {
-                    let chosen_direction = DirectionPicker::pick(prohibited_directions);
-                    self.explore_direction(original_position, chosen_direction, prohibited_directions, map)
+                TileType::Wall | TileType::Head{..}=> {
+                    self.continue_exploring_if_any_direction_is_available(original_position, prohibited_directions, map)
                 },
             }
         }
         // We are targetting an edge of the map
         else {
-            let chosen_direction = DirectionPicker::pick(prohibited_directions);
-            self.explore_direction(original_position, chosen_direction, prohibited_directions, map)
+            self.continue_exploring_if_any_direction_is_available(original_position, prohibited_directions, map)
         }
     }
 }

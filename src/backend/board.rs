@@ -69,7 +69,7 @@ impl <MapType: MapTrait> Board<MapType>{
         self.heads.remove(id);
 
         self.send_current_nb_heads();
-        if(self.heads.get_nb_heads() ==0){
+        if self.heads.get_nb_heads() ==0{
             self.send_end_game_evt(EndGameReason::NoRemainingHeads);
             
         }

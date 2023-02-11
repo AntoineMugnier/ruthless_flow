@@ -142,7 +142,7 @@ impl GfxMap{
 
     }
 
-    pub fn slide(&mut self){    
+    pub fn slide(&mut self){
         self.sto.pop_front();
         self.sliding_state = SlidingState::Enabled{time_since_last_slide: SystemTime::now()};
 

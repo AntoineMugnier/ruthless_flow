@@ -32,7 +32,6 @@ impl GameInfoGfx{
         &c.draw_state,
         transform,
         g).unwrap();
-
     }
 
     
@@ -103,6 +102,7 @@ impl GameInfoGfx{
     }
 
     pub fn set_user_direction(&mut self, direction:Direction){
-        self.direction = direction;}
+        self.direction = direction;
+    }
 
 }

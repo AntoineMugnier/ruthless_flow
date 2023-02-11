@@ -9,18 +9,16 @@ pub type PickerCtx = private::__mock_MockDirectionPicker::__pick::Context;
 mod private{
     use rand::{thread_rng, Rng};
     use crate::utils::{DirectionFlags, Direction};
-    
 
     pub struct DirectionPicker{}
 
     #[cfg_attr(test, mockall::automock)]
     impl DirectionPicker{
-    pub fn pick(prohibited_directions: &mut DirectionFlags) -> Direction {
+    pub fn pick(prohibited_directions: &mut DirectionFlags) -> Option<Direction> {
         // Full bitfield means that all dirs have already been explored, which should not be possible. If it is the case the map is ill-formed
-        assert!(
-            prohibited_directions.contains(!DirectionFlags::all()),
-            "No more available dirs to pick"
-        );
+        if prohibited_directions.contains(DirectionFlags::all()){
+            return None
+        }
 
         // Generate a vector containing all available directions
         let mut dir_vec = Vec::<Direction>::new();
@@ -46,7 +44,8 @@ mod private{
         // Make the direction unavailable in prohibited_directions
         prohibited_directions.insert(picked_direction);
 
-        picked_direction
+        Some(picked_direction)
+
     }
 }
 }
