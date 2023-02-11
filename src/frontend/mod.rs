@@ -64,11 +64,12 @@ impl Frontend{
 
     }
     
-    pub fn end_game(&mut self, game_end_reason: EndGameReason ){
+    pub fn trigger_game_ending_screen(&mut self, game_end_reason: EndGameReason ){
         println!("{:?}", game_end_reason);
+        self.current_game_stage = GameStage::Ending;
     }
     
-    pub fn run_startup(&mut self, e: impl GenericEvent ) {
+    pub fn handle_startup(&mut self, e: impl GenericEvent ) {
             
             if let Some(args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
@@ -79,8 +80,6 @@ impl Frontend{
                 self.gfx_map.render(&c, g);
                 self.startup_screen.render(&mut self.glyphs, &c, g);
                 self.glyphs.factory.encoder.flush(device);
-
-
             });
         }
         
@@ -122,7 +121,7 @@ impl Frontend{
         self.current_game_stage = GameStage::Playing;
     }
 
-    pub fn run_game(&mut self, e : impl GenericEvent ) {
+    pub fn handle_running_game(&mut self, e : impl GenericEvent ) {
         
             
             if let Some(args) = e.render_args() {
@@ -134,12 +133,6 @@ impl Frontend{
                 self.gfx_map.render(&c, g);
                 self.game_info_gfx.render(&mut self.glyphs,  &c, g);
                 self.glyphs.factory.encoder.flush(device);
-
-                match self.current_game_stage{
-                    GameStage::Startup => self.startup_screen.render(&mut self.glyphs, &c, g),
-                    GameStage::Playing => {},
-                    GameStage::Ending => todo!(),
-                }
                 });
             }
             
@@ -158,7 +151,7 @@ impl Frontend{
                         Event::UpdateNbHeads { nb_heads } => {
                             self.game_info_gfx.update_nb_heads(nb_heads);
                         },
-                        Event::EndGame { game_end_reason } => {self.end_game(game_end_reason); return }, 
+                        Event::EndGame { game_end_reason } => {self.trigger_game_ending_screen(game_end_reason); return }, 
                     }
                 }
             }
@@ -187,14 +180,17 @@ impl Frontend{
             }
     }
 
+    pub fn handle_ending_game(&mut self, e: impl GenericEvent ) {
+
+    }
+
     pub fn run(&mut self) {
         while let Some(e) = self.window.next() {
 
         match self.current_game_stage{
-            GameStage::Startup => self.run_startup(e),
-
-            GameStage::Playing => self.run_game(e),
-            GameStage::Ending => todo!(),
+            GameStage::Startup => self.handle_startup(e),
+            GameStage::Playing => self.handle_running_game(e),
+            GameStage::Ending => self.handle_ending_game(e),
         }
     }
         
