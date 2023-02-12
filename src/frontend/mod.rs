@@ -29,7 +29,6 @@ pub enum Event {
 pub struct Frontend{
     window: PistonWindow,
     glyphs: Glyphs,
-    texture_context : G2dTextureContext,
     gfx_map : GfxMap,
     game_info_gfx : GameInfoGfx,
     startup_screen : StartupScreen,
@@ -48,12 +47,11 @@ impl Frontend{
             .graphics_api(OpenGL::V3_2)
             .build().unwrap();
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
-        let texture_context = window.create_texture_context();
         let game_info_gfx = GameInfoGfx::new();
         let end_game_box = EndGameBox::new();
         let current_game_stage = GameStage::Startup;
         let startup_screen = StartupScreen::new();
-        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, startup_screen,end_game_box, backend_event_sender, frontend_event_receiver, current_game_stage}
+        Frontend {window, glyphs, gfx_map, game_info_gfx, startup_screen,end_game_box, backend_event_sender, frontend_event_receiver, current_game_stage}
     }
 
     pub fn render_title( glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
