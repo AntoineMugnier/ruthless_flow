@@ -162,9 +162,11 @@ impl <MapType: MapTrait> Board<MapType>{
 
 
     fn slide_map_handler(&mut self) {
-        match self.map.slide(){
-            SlidingResult::HeadPoppedOut => self.send_end_game_evt(EndGameReason::HeadPoppedOutByRisingEdge),
-            SlidingResult::NoHeadPoppedOut => {}
+        if self.map.will_head_pop_out_during_next_sliding(){
+            self.send_end_game_evt(EndGameReason::HeadPoppedOutByRisingEdge);
+        }
+        else{
+            self.map.slide();
         }
     }
     

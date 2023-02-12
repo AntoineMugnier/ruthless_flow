@@ -29,8 +29,9 @@ pub trait MapTrait {
     ) -> Option<(TileType, Coordinates)>;
     fn get_length(&self) -> usize;
     fn get_height(&self) -> usize;
-    fn slide(&mut self) -> SlidingResult;
+    fn slide(&mut self);
     fn is_on_arrival_line(&self, position: Coordinates) -> bool;
+    fn will_head_pop_out_during_next_sliding(&self) -> bool;
 }
 
 pub struct Map {
@@ -60,26 +61,27 @@ impl MapTrait for Map {
         (position.y - self.y_offset) == arrival_line_y 
     }
     
-    fn slide(&mut self) -> SlidingResult{
+    fn will_head_pop_out_during_next_sliding(&self) -> bool{
+        let next_line_to_pop_out = &self.sto[0]; // Bottom line of the map
 
-        let last_line = self.sto.pop_front().unwrap(); // Remove bottom line of the map
-
-        let mut result = SlidingResult::NoHeadPoppedOut;
         // If a head tile has been popped out, stop game
-        for tile in last_line{
+        for tile in next_line_to_pop_out{
             match tile {
                 TileType::Head {..} =>{
-                    result = SlidingResult::HeadPoppedOut
+                    return true
                 }
                 _ =>{}
             }
         }
-        self.y_offset+=1;
+        false
+    }
 
+    fn slide(&mut self){
+        let last_line = self.sto.pop_front().unwrap(); // Remove bottom line of the map
+        self.y_offset+=1;
         let evt = frontend::Event::NewMapLine;
         self.frontend_sender.send(evt).unwrap();
 
-        result
     }
 
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
