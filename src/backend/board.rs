@@ -1,7 +1,7 @@
 use super::config;
 use super::head_list::HeadList;
 use super::heads::{self, Head, SimpleHead};
-use super::map::{MapTrait, TileType};
+use super::map::{SlidingResult, MapTrait, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
 use crate::frontend;
@@ -23,10 +23,13 @@ pub enum Event {
     SetNextHeadDir {
         direction: Direction,
     },
-    StartGame}
+    StartGame,
+    EndGame{end_game_reason : EndGameReason}
+}
 
-#[derive(Debug, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EndGameReason{
+    Victory,
     NoRemainingHeads,
     HeadPoppedOutByRisingEdge
 }
@@ -150,9 +153,12 @@ impl <MapType: MapTrait> Board<MapType>{
         board
     }
 
+
     fn slide_map_handler(&mut self) {
-        self.map.slide();
-        
+        match self.map.slide(){
+            SlidingResult::HeadPoppedOut => self.send_end_game_evt(EndGameReason::HeadPoppedOutByRisingEdge),
+            SlidingResult::NoHeadPoppedOut => {}
+        }
     }
     
     pub fn run(&mut self) {
@@ -185,6 +191,9 @@ impl <MapType: MapTrait> Board<MapType>{
                 } => {
                     self.add_head_handler(position, coming_from, parent_direction)
                 },
+                Event::EndGame{end_game_reason} => {
+                    self.send_end_game_evt(end_game_reason);
+                }
                 _ => {}
             }
         }

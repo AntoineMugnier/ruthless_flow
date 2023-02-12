@@ -4,12 +4,13 @@ mod utils;
 pub mod game_info;
 mod startup_screen;
 pub mod config;
+mod end_game_box;
 use crate::{utils::{Coordinates, Direction}, backend::{self, board::EndGameReason}};
 use piston_window::{*, glyph_cache::rusttype::GlyphCache};
 
 use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
 
-use self::{gfx_map::GfxMap, game_info::GameInfoGfx, startup_screen::StartupScreen};
+use self::{gfx_map::GfxMap, game_info::GameInfoGfx, startup_screen::StartupScreen, end_game_box::EndGameBox};
 
 enum GameStage{
     Startup,
@@ -32,6 +33,7 @@ pub struct Frontend{
     gfx_map : GfxMap,
     game_info_gfx : GameInfoGfx,
     startup_screen : StartupScreen,
+    end_game_box : EndGameBox,
     backend_event_sender: Sender<board::Event>,
     frontend_event_receiver: Receiver<Event>,
     current_game_stage : GameStage
@@ -48,9 +50,10 @@ impl Frontend{
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
         let texture_context = window.create_texture_context();
         let game_info_gfx = GameInfoGfx::new();
+        let end_game_box = EndGameBox::new();
         let current_game_stage = GameStage::Startup;
         let startup_screen = StartupScreen::new();
-        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, startup_screen, backend_event_sender, frontend_event_receiver, current_game_stage}
+        Frontend {window, glyphs, texture_context, gfx_map, game_info_gfx, startup_screen,end_game_box, backend_event_sender, frontend_event_receiver, current_game_stage}
     }
 
     pub fn render_title( glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
@@ -139,8 +142,9 @@ impl Frontend{
             if let Some(args) = e.update_args() {
                 while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                     match evt {
-                        Event::NewMapLine =>{
+                        Event::NewMapLine{} =>{
                             self.gfx_map.slide();
+
                         },
                         Event::SetTile { position, tile_type } =>{
                             self.gfx_map.set_tile(position, tile_type);
@@ -151,7 +155,9 @@ impl Frontend{
                         Event::UpdateNbHeads { nb_heads } => {
                             self.game_info_gfx.update_nb_heads(nb_heads);
                         },
-                        Event::EndGame { game_end_reason } => {self.trigger_game_ending_screen(game_end_reason); return }, 
+                        Event::EndGame { game_end_reason } => {
+                            self.end_game_box.update_end_game_reason(game_end_reason);
+                            self.trigger_game_ending_screen(game_end_reason); return }, 
                     }
                 }
             }
@@ -181,7 +187,18 @@ impl Frontend{
     }
 
     pub fn handle_ending_game(&mut self, e: impl GenericEvent ) {
-
+        if let Some(args) = e.render_args() {
+            self.window.draw_2d(&e, |c, g, device| {
+            
+            // The board is always drawn
+            clear(config::BACKGROUND_COLOR, g);
+            Self::render_title(&mut self.glyphs,  &c, g);
+            self.gfx_map.render(&c, g);
+            self.game_info_gfx.render(&mut self.glyphs,  &c, g);
+            self.end_game_box.render(&mut self.glyphs,  &c, g);
+            self.glyphs.factory.encoder.flush(device);
+            });
+        }
     }
 
     pub fn run(&mut self) {

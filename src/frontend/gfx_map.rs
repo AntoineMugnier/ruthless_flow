@@ -77,7 +77,7 @@ impl GfxMap{
         let tile_height = (config::map::END_Y - config::map::ORIGIN_Y)/  (self.map_nb_visible_lines as f64);
         let tile_length = (config::map::END_X - config::map::ORIGIN_X)/ (self.get_length() as f64);
 
-        let mut draw_tile = |x_origin, y_origin, new_tile_height, tile_type|{
+        let mut draw_tile = |x_origin, y_origin, new_tile_height, tile_type,  c: &Context, g: &mut G2d|{
             let x_end = x_origin + tile_length;
             let y_end = y_origin + new_tile_height;
 
@@ -105,30 +105,53 @@ impl GfxMap{
 
             // First line
             if line_index == self.map_nb_visible_lines {
+
                 for  tile_type in line_of_tiles.iter(){
-                    draw_tile(x_origin, y_origin, first_tile_line_height, *tile_type);
+                    draw_tile(x_origin, y_origin, first_tile_line_height, *tile_type, c, g);
                     x_origin+=tile_length;
                 }
+                self.render_arrival_line(line_index, first_tile_line_height, y_origin, c, g);
                 y_origin += first_tile_line_height;
             }
             // Last line
             else if  line_index == 0{
+
                 for  tile_type in line_of_tiles.iter(){
-                    draw_tile(x_origin, y_origin, last_tile_line_height, *tile_type);
+                    draw_tile(x_origin, y_origin, last_tile_line_height, *tile_type, c, g);
                     x_origin+=tile_length;
                 }
+                self.render_arrival_line(line_index, last_tile_line_height, y_origin, c, g);
+
             }
             // Others
             else{
+
                 for  tile_type in line_of_tiles.iter(){
-                    draw_tile(x_origin, y_origin, tile_height, *tile_type);
+                    draw_tile(x_origin, y_origin, tile_height, *tile_type, c, g);
                     x_origin+=tile_length;
                 }
+                self.render_arrival_line(line_index, tile_height, y_origin, c, g);
                 y_origin += tile_height;
+
             }
+
+
         }
     }
-    
+
+    pub fn render_arrival_line(&mut self, line_index: usize, tile_height : f64, y_origin : f64,  c: &Context, g: &mut G2d){
+
+        let y_line  = self.get_height() - self.map_nb_visible_lines;
+
+        if y_line <= self.map_nb_visible_lines {
+            if y_line == line_index {
+                rectangle_from_to(config::map::arrival_line::COLOR, 
+                    [config::map::ORIGIN_X, y_origin],[config::map::END_X, y_origin + tile_height],
+                    c.transform, g);
+            }
+
+        }
+    }
 
     pub fn render(&mut self, c: &Context, g: &mut G2d){
 

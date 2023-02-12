@@ -95,7 +95,6 @@ impl private::Sealed for SimpleHead {
                 }
                 //If we run out of possible moves, the head does not move this turn
                 else{
-                    println!("runs out");
                     return
                 }
             }
@@ -138,6 +137,12 @@ impl private::Sealed for SimpleHead {
                 },
                 TileType::Wall => panic!("Cannot move to a wall"),
             }
+
+            // Check if the head has win the game
+             if map.is_on_arrival_line(self.position){
+                let event = board::Event::EndGame{end_game_reason : board::EndGameReason::Victory};
+                self.board_events_sender.send(event);
+             }
         }
         
     }

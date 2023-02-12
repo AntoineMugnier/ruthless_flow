@@ -3,7 +3,6 @@ use crate::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
 use crate::frontend;
 
-use super::board::EndGameReason;
 use super::heads::Id;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TileType {
@@ -14,6 +13,10 @@ pub enum TileType {
     Wall,
 }
 
+pub enum SlidingResult{
+    HeadPoppedOut,
+    NoHeadPoppedOut
+}
 #[cfg_attr(test, mockall::automock)]
 pub trait MapTrait {
     fn new(frontend_sender: Sender<frontend::Event>, sto: VecDeque<Vec<TileType>>, usable_map_lines : usize) -> Self;
@@ -26,15 +29,14 @@ pub trait MapTrait {
     ) -> Option<(TileType, Coordinates)>;
     fn get_length(&self) -> usize;
     fn get_height(&self) -> usize;
-    fn slide(&mut self);
-    fn send_end_game_evt(&self, end_game_reason : EndGameReason);
-
+    fn slide(&mut self) -> SlidingResult;
+    fn is_on_arrival_line(&self, position: Coordinates) -> bool;
 }
 
 pub struct Map {
     pub sto: VecDeque<Vec<TileType>>,
     frontend_sender: Sender<frontend::Event>,
-    usable_map_lines : usize,
+    map_nb_visible_lines : usize,
     y_offset : usize
 }
 impl Map {}
@@ -42,40 +44,42 @@ impl MapTrait for Map {
     fn new(
         frontend_sender: Sender<frontend::Event>, 
         sto: VecDeque<Vec<TileType>>,
-        usable_map_lines : usize
+        map_nb_visible_lines : usize
     ) -> Self {
-
+        
         Map {
             frontend_sender,
             sto,
-            usable_map_lines,
+            map_nb_visible_lines,
             y_offset : 0
         }
     }
-
-    fn send_end_game_evt(&self, end_game_reason : EndGameReason){
-        let event = frontend::Event::EndGame{game_end_reason: end_game_reason};
-        self.frontend_sender.send(event).unwrap();
+    fn is_on_arrival_line(&self, position: Coordinates) -> bool{
+        //Arrival line position is variable
+        let arrival_line_y = self.get_height()  - self.map_nb_visible_lines;
+        (position.y - self.y_offset) == arrival_line_y 
     }
-
-    fn slide(&mut self){
+    
+    fn slide(&mut self) -> SlidingResult{
 
         let last_line = self.sto.pop_front().unwrap(); // Remove bottom line of the map
+
+        let mut result = SlidingResult::NoHeadPoppedOut;
         // If a head tile has been popped out, stop game
         for tile in last_line{
             match tile {
                 TileType::Head {..} =>{
-                    self.send_end_game_evt(EndGameReason::HeadPoppedOutByRisingEdge)
+                    result = SlidingResult::HeadPoppedOut
                 }
                 _ =>{}
             }
         }
-
         self.y_offset+=1;
-
 
         let evt = frontend::Event::NewMapLine;
         self.frontend_sender.send(evt).unwrap();
+
+        result
     }
 
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType) {
