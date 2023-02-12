@@ -34,6 +34,11 @@ pub enum EndGameReason{
     HeadPoppedOutByRisingEdge
 }
 
+enum BoardState{
+    Startup,
+    Playing,
+    Ending
+}
 
 pub struct Board<MapType: MapTrait> {
     map: MapType,
@@ -42,6 +47,7 @@ pub struct Board<MapType: MapTrait> {
     board_events_sender: Sender<Event>,
     frontend_events_sender: Sender<frontend::Event>,
     next_direction: Direction,
+    board_state: BoardState,
     move_heads_timer_h: Option<std::thread::JoinHandle<()>>,
     slide_map_timer_h:  Option<std::thread::JoinHandle<()>>,
 }
@@ -144,6 +150,7 @@ impl <MapType: MapTrait> Board<MapType>{
             board_events_receiver,
             frontend_events_sender,
             next_direction: Direction::Up,
+            board_state: BoardState::Startup,
             move_heads_timer_h: None,
             slide_map_timer_h: None
         };
@@ -161,40 +168,55 @@ impl <MapType: MapTrait> Board<MapType>{
         }
     }
     
-    pub fn run(&mut self) {
-        while let Ok(evt) = self.board_events_receiver.recv() {
+    pub fn startup_state_handler(&mut self, evt : Event){
             match evt {
-                Event::StartGame => {break}, // go to main handler
+                Event::StartGame => {
+                    self.start_timers(); // Enable timers that pace the application
+                    self.board_state = BoardState::Playing;
+                    return
+                }, 
                 _ =>{}
             }
-        }
+    }
 
-        // Enable timers that pace the application
-        self.start_timers();
+    pub fn playing_state_handler(&mut self, evt : Event){
+        match evt {
+            Event::SlideMapTick => self.slide_map_handler(),
+            Event::MoveHeadsTick => {
+                self.move_heads_handler(self.next_direction)
+            }
+            Event::SetNextHeadDir { direction } => {
+                self.set_next_head_dir(direction)
+            }
+            Event::KillHead { id } => {
+                self.kill_head_handler(id)
+            }
+            Event::AddHead {
+                position,
+                coming_from,
+                parent_direction,
+            } => {
+                self.add_head_handler(position, coming_from, parent_direction)
+            },
+            Event::EndGame{end_game_reason} => {
+                self.send_end_game_evt(end_game_reason);
+                self.board_state = BoardState::Ending;
+                return
+            }
+            _ => {}
+        }
+    }
+    pub fn ending_state_handler(&mut self, _evt : Event){
+
+    }
+
+    pub fn run(&mut self) {
 
         while let Ok(evt) = self.board_events_receiver.recv() {
-            match evt {
-                Event::SlideMapTick => self.slide_map_handler(),
-                Event::MoveHeadsTick => {
-                    self.move_heads_handler(self.next_direction)
-                }
-                Event::SetNextHeadDir { direction } => {
-                    self.set_next_head_dir(direction)
-                }
-                Event::KillHead { id } => {
-                    self.kill_head_handler(id)
-                }
-                Event::AddHead {
-                    position,
-                    coming_from,
-                    parent_direction,
-                } => {
-                    self.add_head_handler(position, coming_from, parent_direction)
-                },
-                Event::EndGame{end_game_reason} => {
-                    self.send_end_game_evt(end_game_reason);
-                }
-                _ => {}
+            match self.board_state{
+                BoardState::Startup => self.startup_state_handler(evt),
+                BoardState::Playing => self.playing_state_handler(evt),
+                BoardState::Ending => self.ending_state_handler(evt),
             }
         }
     }

@@ -65,8 +65,7 @@ impl Frontend{
 
     }
     
-    pub fn trigger_game_ending_screen(&mut self, game_end_reason: EndGameReason ){
-        println!("{:?}", game_end_reason);
+    pub fn trigger_game_ending_screen(&mut self){
         self.current_game_stage = GameStage::Ending;
     }
     
@@ -123,7 +122,6 @@ impl Frontend{
     }
 
     pub fn handle_running_game(&mut self, e : impl GenericEvent ) {
-        
             
             if let Some(args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
@@ -155,7 +153,7 @@ impl Frontend{
                         },
                         Event::EndGame { game_end_reason } => {
                             self.end_game_box.update_end_game_reason(game_end_reason);
-                            self.trigger_game_ending_screen(game_end_reason); return }, 
+                            self.trigger_game_ending_screen(); return }, 
                     }
                 }
             }
@@ -208,8 +206,6 @@ impl Frontend{
             GameStage::Ending => self.handle_ending_game(e),
         }
     }
-        
-
 }
 
 fn send_next_direction(&mut self, direction : Direction){
