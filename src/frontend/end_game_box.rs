@@ -22,6 +22,7 @@ impl EndGameBox{
             },
             //May not be relevant
             EndGameReason::NoRemainingHeads => {
+
                 self.end_game_title = Some(String::from("DEFEAT !"));
                 self.end_game_description = Some(String::from("Your have no more heads"));
 
@@ -57,6 +58,7 @@ impl EndGameBox{
         };
         
         draw_text(self.end_game_description.as_ref().unwrap().as_str(), config::end_game_box::description::ORIGIN_X, config::end_game_box::description::ORIGIN_Y, glyph_cache, c , g);
+        draw_text("                   Press ESCAPE to exit game", config::end_game_box::description::ORIGIN_X , config::end_game_box::description::ORIGIN_Y + config::end_game_box::description::FONT_SIZE as f64 *2.0, glyph_cache, c , g);
     }
 
     pub fn render(&mut self, glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
