@@ -64,9 +64,11 @@ impl <MapType: MapTrait> Board<MapType>{
         
     }
 
-    fn send_end_game_evt(&self, end_game_reason : EndGameReason){
+    fn end_game(&mut self, end_game_reason : EndGameReason){
         let event = frontend::Event::EndGame{game_end_reason: end_game_reason};
         self.frontend_events_sender.send(event).unwrap();
+        self.move_heads_timer_h.unwrap().
+        self.board_state = BoardState::Ending;
     }
 
     fn send_current_nb_heads(&self){
@@ -79,7 +81,7 @@ impl <MapType: MapTrait> Board<MapType>{
 
         self.send_current_nb_heads();
         if self.heads.get_nb_heads() ==0{
-            self.send_end_game_evt(EndGameReason::NoRemainingHeads);
+            self.end_game(EndGameReason::NoRemainingHeads);
             
         }
     }
@@ -163,7 +165,7 @@ impl <MapType: MapTrait> Board<MapType>{
 
     fn slide_map_handler(&mut self) {
         if self.map.will_head_pop_out_during_next_sliding(){
-            self.send_end_game_evt(EndGameReason::HeadPoppedOutByRisingEdge);
+            self.end_game(EndGameReason::HeadPoppedOutByRisingEdge);
         }
         else{
             self.map.slide();
@@ -201,15 +203,13 @@ impl <MapType: MapTrait> Board<MapType>{
                 self.add_head_handler(position, coming_from, parent_direction)
             },
             Event::EndGame{end_game_reason} => {
-                self.send_end_game_evt(end_game_reason);
-                self.board_state = BoardState::Ending;
-                return
+                self.end_game(end_game_reason);
             }
             _ => {}
         }
     }
-    pub fn ending_state_handler(&mut self, _evt : Event){
 
+    pub fn ending_state_handler(&mut self, _evt : Event){
     }
 
     pub fn run(&mut self) {
