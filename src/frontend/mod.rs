@@ -12,7 +12,7 @@ use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
 
 use self::{gfx_map::GfxMap, game_info::GameInfoGfx, startup_screen::StartupScreen, end_game_box::EndGameBox};
 
-enum GameStage{
+enum FrontendState{
     Startup,
     Playing,
     Ending
@@ -35,7 +35,7 @@ pub struct Frontend{
     end_game_box : EndGameBox,
     backend_event_sender: Sender<board::Event>,
     frontend_event_receiver: Receiver<Event>,
-    current_game_stage : GameStage
+    current_game_stage : FrontendState
 }
 impl Frontend{
 
@@ -49,7 +49,7 @@ impl Frontend{
         let glyphs = window.load_font(config::assets::FONTS_PATH).unwrap();
         let game_info_gfx = GameInfoGfx::new();
         let end_game_box = EndGameBox::new();
-        let current_game_stage = GameStage::Startup;
+        let current_game_stage = FrontendState::Startup;
         let startup_screen = StartupScreen::new();
         Frontend {window, glyphs, gfx_map, game_info_gfx, startup_screen,end_game_box, backend_event_sender, frontend_event_receiver, current_game_stage}
     }
@@ -66,10 +66,10 @@ impl Frontend{
     }
     
     pub fn trigger_game_ending_screen(&mut self){
-        self.current_game_stage = GameStage::Ending;
+        self.current_game_stage = FrontendState::Ending;
     }
     
-    pub fn handle_startup(&mut self, e: impl GenericEvent ) {
+    pub fn startup_state_handler(&mut self, e: impl GenericEvent ) {
             
             if let Some(args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
@@ -82,18 +82,7 @@ impl Frontend{
                 self.glyphs.factory.encoder.flush(device);
             });
         }
-        
-            
-            if let Some(args) = e.update_args() {
-                while let Ok(evt) = self.frontend_event_receiver.try_recv() {
-                    match evt {
-                        Event::SetTile { position, tile_type } =>{
-                            self.gfx_map.set_tile(position, tile_type);
-                        },
-                        _ =>{}
-                }
-            }
-        }
+    
         
         if let Some(args) = e.press_args() {
             match args {
@@ -118,10 +107,10 @@ impl Frontend{
         let event = backend::board::Event::StartGame;
         self.backend_event_sender.send(event).unwrap();
 
-        self.current_game_stage = GameStage::Playing;
+        self.current_game_stage = FrontendState::Playing;
     }
 
-    pub fn handle_running_game(&mut self, e : impl GenericEvent ) {
+    pub fn playing_state_handler(&mut self, e : impl GenericEvent ) {
             
             if let Some(args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
@@ -135,28 +124,6 @@ impl Frontend{
                 });
             }
             
-            if let Some(args) = e.update_args() {
-                while let Ok(evt) = self.frontend_event_receiver.try_recv() {
-                    match evt {
-                        Event::NewMapLine{} =>{
-                            self.gfx_map.slide();
-
-                        },
-                        Event::SetTile { position, tile_type } =>{
-                            self.gfx_map.set_tile(position, tile_type);
-                        }
-                        Event::UserDirSet { direction } => {
-                            self.game_info_gfx.set_user_direction(direction);
-                        }, 
-                        Event::UpdateNbHeads { nb_heads } => {
-                            self.game_info_gfx.update_nb_heads(nb_heads);
-                        },
-                        Event::EndGame { game_end_reason } => {
-                            self.end_game_box.update_end_game_reason(game_end_reason);
-                            self.trigger_game_ending_screen(); return }, 
-                    }
-                }
-            }
     
             if let Some(args) = e.press_args() {
                 match args {
@@ -182,33 +149,61 @@ impl Frontend{
             }
     }
 
-    pub fn handle_ending_game(&mut self, e: impl GenericEvent ) {
+    pub fn ending_state_handler(&mut self, e: impl GenericEvent ) {
         if let Some(args) = e.render_args() {
             self.window.draw_2d(&e, |c, g, device| {
             
-            // The board is always drawn
-            clear(config::BACKGROUND_COLOR, g);
-            Self::render_title(&mut self.glyphs,  &c, g);
-            self.gfx_map.render(&c, g);
-            self.game_info_gfx.render(&mut self.glyphs,  &c, g);
-            self.end_game_box.render(&mut self.glyphs,  &c, g);
-            self.glyphs.factory.encoder.flush(device);
+                // The board is always drawn
+                clear(config::BACKGROUND_COLOR, g);
+                Self::render_title(&mut self.glyphs,  &c, g);
+                self.gfx_map.render(&c, g);
+                self.game_info_gfx.render(&mut self.glyphs,  &c, g);
+                self.end_game_box.render(&mut self.glyphs,  &c, g);
+                self.glyphs.factory.encoder.flush(device);
             });
+        }
+    }
+
+    fn update_model(&mut self, e: &impl GenericEvent){
+        if let Some(args) = e.update_args() {
+            while let Ok(evt) = self.frontend_event_receiver.try_recv() {
+                match evt {
+                    Event::NewMapLine{} =>{
+                        self.gfx_map.slide();
+                    },
+                    Event::SetTile { position, tile_type } =>{
+                        self.gfx_map.set_tile(position, tile_type);
+                    }
+                    Event::UserDirSet { direction } => {
+                        self.game_info_gfx.set_user_direction(direction);
+                    }, 
+                    Event::UpdateNbHeads { nb_heads } => {
+                        self.game_info_gfx.update_nb_heads(nb_heads);
+                    },
+                    Event::EndGame { game_end_reason } => {
+                        self.end_game_box.update_end_game_reason(game_end_reason);
+                        self.trigger_game_ending_screen(); return }, 
+                }
+            }
         }
     }
 
     pub fn run(&mut self) {
         while let Some(e) = self.window.next() {
+            
+            self.update_model(&e);
 
-        match self.current_game_stage{
-            GameStage::Startup => self.handle_startup(e),
-            GameStage::Playing => self.handle_running_game(e),
-            GameStage::Ending => self.handle_ending_game(e),
-        }
+            match self.current_game_stage{
+                FrontendState::Startup => self.startup_state_handler(e),
+                FrontendState::Playing => self.playing_state_handler(e),
+                FrontendState::Ending => self.ending_state_handler(e),
+            }
     }
 }
 
+
 fn send_next_direction(&mut self, direction : Direction){
+
     let event = backend::board::Event::SetNextHeadDir { direction};
     self.backend_event_sender.send(event).unwrap();
     
