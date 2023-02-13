@@ -137,7 +137,6 @@ impl Frontend{
         if let Some(Button::Keyboard(Key::Return)) = e.press_args(){
             self.start_game();
         }
-    }
 }
 
 
@@ -209,10 +208,6 @@ impl Frontend{
     pub fn run(&mut self) {
         while let Some(e) = self.window.next() {
             
-            while let Ok(evt) = self.frontend_event_receiver.try_recv() {
-                self.update_model(evt);
-            }
-
             match self.current_game_stage{
                 FrontendState::Startup => self.startup_state_handler(e),
                 FrontendState::Playing => self.playing_state_handler(e),
