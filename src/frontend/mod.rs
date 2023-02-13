@@ -73,12 +73,11 @@ impl Frontend{
             
             if let Some(args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
-                
-                // The board is always drawn
-                clear(config::BACKGROUND_COLOR, g);
-                Self::render_title(&mut self.glyphs,  &c, g);
-                self.gfx_map.render(&c, g);
+                    
+                Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
+
                 self.startup_screen.render(&mut self.glyphs, &c, g);
+
                 self.glyphs.factory.encoder.flush(device);
             });
         }
@@ -116,10 +115,8 @@ impl Frontend{
                 self.window.draw_2d(&e, |c, g, device| {
                 
                 // The board is always drawn
-                clear(config::BACKGROUND_COLOR, g);
-                Self::render_title(&mut self.glyphs,  &c, g);
-                self.gfx_map.render(&c, g);
-                self.game_info_gfx.render(&mut self.glyphs,  &c, g);
+                Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
+
                 self.glyphs.factory.encoder.flush(device);
                 });
             }
@@ -154,14 +151,19 @@ impl Frontend{
             self.window.draw_2d(&e, |c, g, device| {
             
                 // The board is always drawn
-                clear(config::BACKGROUND_COLOR, g);
-                Self::render_title(&mut self.glyphs,  &c, g);
-                self.gfx_map.render(&c, g);
-                self.game_info_gfx.render(&mut self.glyphs,  &c, g);
+                Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
                 self.end_game_box.render(&mut self.glyphs,  &c, g);
                 self.glyphs.factory.encoder.flush(device);
+
             });
         }
+    }
+
+    fn draw_game_board(gfx_map: &mut GfxMap, game_info_gfx : &mut GameInfoGfx, glyphs: &mut Glyphs, c: &Context, g: &mut G2d) {
+        clear(config::BACKGROUND_COLOR, g);
+        Self::render_title(glyphs,  &c, g);
+        gfx_map.render(&c, g);
+        game_info_gfx.render(glyphs,  &c, g);
     }
 
     fn update_model(&mut self, e: &impl GenericEvent){
