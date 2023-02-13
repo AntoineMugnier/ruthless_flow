@@ -146,7 +146,7 @@ pub mod end_game_box{
     
         pub mod description{
             pub const ORIGIN_X : f64 = super::ORIGIN_X + 60.0;
-            pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 120.0;
+            pub const ORIGIN_Y : f64 = super::ORIGIN_Y + 110.0;
             pub const FONT_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
             pub const FONT_SIZE: u32 = 18;
         }

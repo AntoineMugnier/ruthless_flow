@@ -1,29 +1,62 @@
 use piston_window::{Context, G2d,line, color, text, DrawState, Transformed, glyph_cache::rusttype::GlyphCache, TextureSettings, Glyphs, Flip, Texture, G2dTexture, G2dTextureContext, image, rectangle::{square, self}, rectangle_from_to};
-use std::time::{SystemTime};
+use std::time::{SystemTime, Duration};
 
 use crate::utils::Direction;
 use super::config;
 
 pub struct GameInfoGfx{
     direction : Direction,
-    init_time : SystemTime,
+    timer_state : TimerState,
     nb_heads : usize
 }
-
+pub enum TimerState{
+    Enabled{init_time : SystemTime},
+    Frozen{time_elapsed_when_frozen : Duration},
+    Disabled
+}
 impl GameInfoGfx{
 
     pub fn new() -> GameInfoGfx{
 
-        GameInfoGfx{direction: Direction::Up, init_time : SystemTime::now(), nb_heads: 0}
+        GameInfoGfx{direction: Direction::Up, timer_state : TimerState::Disabled, nb_heads: 0}
+    }
+
+    pub fn start_timer(&mut self){
+        self.timer_state = TimerState::Enabled{init_time: SystemTime::now()};
+    }
+
+    pub fn freeze_timer(&mut self) {
+        if let TimerState::Enabled {init_time} = self.timer_state{
+            self.timer_state = TimerState::Frozen { time_elapsed_when_frozen: init_time.elapsed().unwrap() };
+        }
     }
 
     fn render_time(&mut self,  glyph_cache : &mut Glyphs, c: &Context, g: &mut G2d){
 
-        let time_elapsed =self.init_time.elapsed().unwrap().as_millis();
-        let minutes = (time_elapsed/(1000*60))%60;
-        let seconds = (time_elapsed/1000) % 60;
-        let centiseconds = (time_elapsed/10) %100;
+        let minutes;
+        let seconds;
+        let centiseconds;
 
+        match self.timer_state{
+            TimerState::Enabled { init_time } => {
+                let time_elapsed = init_time.elapsed().unwrap().as_millis();
+                minutes = (time_elapsed/(1000*60))%60;
+                seconds = (time_elapsed/1000) % 60;
+                centiseconds = (time_elapsed/10) %100;
+            },
+            TimerState::Frozen { time_elapsed_when_frozen } =>{
+                let time_elapsed_when_frozen = time_elapsed_when_frozen.as_millis();
+                minutes = (time_elapsed_when_frozen/(1000*60))%60;
+                seconds = (time_elapsed_when_frozen/1000) % 60;
+                centiseconds = (time_elapsed_when_frozen/10) %100;
+            },
+            TimerState::Disabled => {
+                minutes = 0;
+                seconds = 0;
+                centiseconds = 0;
+            },
+        }
+        
         let transform = c.transform.trans(config::game_info::time::ORIGIN_X, config::game_info::time::ORIGIN_Y);
         let direction_str = format!("{:02}:{:02}:{:02}", minutes , seconds, centiseconds);
 
@@ -46,7 +79,6 @@ impl GameInfoGfx{
         transform,
         g).unwrap();
     }
-
 
     fn draw_arrow(x: f64, y : f64, direction: Direction,  glyph_cache: &mut Glyphs, c: &Context, g: &mut G2d){
         let transform = c.transform.trans(x, y);

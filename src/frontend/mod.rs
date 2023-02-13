@@ -73,7 +73,7 @@ impl Frontend{
             
             if let Some(args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
-                    
+
                 Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
 
                 self.startup_screen.render(&mut self.glyphs, &c, g);
@@ -102,10 +102,13 @@ impl Frontend{
     fn start_game(&mut self) {
         self.gfx_map.start_sliding();
 
-        // Inform backend that a game is started
+        // Inform backend that a game has started
         let event = backend::board::Event::StartGame;
         self.backend_event_sender.send(event).unwrap();
 
+        // Start the playing time chrono printed on the game info side pannel
+        self.game_info_gfx.start_timer();
+        
         self.current_game_stage = FrontendState::Playing;
     }
 
@@ -184,6 +187,8 @@ impl Frontend{
                     },
                     Event::EndGame { game_end_reason } => {
                         self.end_game_box.update_end_game_reason(game_end_reason);
+                        // Freeze time on the game info side pannel
+                        self.game_info_gfx.freeze_timer();
                         self.trigger_game_ending_screen(); return }, 
                 }
             }
