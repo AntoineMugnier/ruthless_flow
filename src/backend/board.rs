@@ -67,7 +67,6 @@ impl <MapType: MapTrait> Board<MapType>{
     fn end_game(&mut self, end_game_reason : EndGameReason){
         let event = frontend::Event::EndGame{game_end_reason: end_game_reason};
         self.frontend_events_sender.send(event).unwrap();
-        self.move_heads_timer_h.unwrap().
         self.board_state = BoardState::Ending;
     }
 
