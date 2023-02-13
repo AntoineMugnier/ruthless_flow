@@ -64,7 +64,53 @@ impl Frontend{
         g).unwrap();
 
     }
-    
+    fn start_game(&mut self) {
+        self.gfx_map.start_sliding();
+
+        // Inform backend that a game has started
+        let event = backend::board::Event::StartGame;
+        self.backend_event_sender.send(event).unwrap();
+
+        // Start the playing time chrono printed on the game info side pannel
+        self.game_info_gfx.start_timer();
+        
+        self.current_game_stage = FrontendState::Playing;
+    }
+
+    fn end_game(&mut self, game_end_reason: EndGameReason) {
+        self.end_game_box.update_end_game_reason(game_end_reason);
+                    
+        // Freeze time on the game info side pannel
+        self.game_info_gfx.freeze_timer();
+        
+        self.trigger_game_ending_screen();
+    }
+
+    fn draw_game_board(gfx_map: &mut GfxMap, game_info_gfx : &mut GameInfoGfx, glyphs: &mut Glyphs, c: &Context, g: &mut G2d) {
+        clear(config::BACKGROUND_COLOR, g);
+        Self::render_title(glyphs,  &c, g);
+        gfx_map.render(&c, g);
+        game_info_gfx.render(glyphs,  &c, g);
+    }
+
+    fn update_model(&mut self, evt: Event){
+        match evt {
+            Event::NewMapLine{} =>{
+                self.gfx_map.slide();
+            },
+            Event::SetTile { position, tile_type } =>{
+                self.gfx_map.set_tile(position, tile_type);
+            }
+            Event::UserDirSet { direction } => {
+                self.game_info_gfx.set_user_direction(direction);
+            }, 
+            Event::UpdateNbHeads { nb_heads } => {
+                self.game_info_gfx.update_nb_heads(nb_heads);
+            },
+            _ =>{}
+        }
+    }
+
     pub fn trigger_game_ending_screen(&mut self){
         self.current_game_stage = FrontendState::Ending;
     }
@@ -82,35 +128,18 @@ impl Frontend{
             });
         }
     
+        if let Some(args) = e.update_args() {
+            while let Ok(evt) = self.frontend_event_receiver.try_recv() {
+                self.update_model(evt)
+            }
+        }
         
-        if let Some(args) = e.press_args() {
-            match args {
-                Button::Keyboard(key) => {
-                    match key {
-                        Key::Return =>{
-                            self.start_game();
-                            return
-                        },
-                        _ => ()
-                    }
-                }
-                _ => ()
+        if let Some(Button::Keyboard(Key::Return)) = e.press_args(){
+            self.start_game();
         }
     }
 }
 
-    fn start_game(&mut self) {
-        self.gfx_map.start_sliding();
-
-        // Inform backend that a game has started
-        let event = backend::board::Event::StartGame;
-        self.backend_event_sender.send(event).unwrap();
-
-        // Start the playing time chrono printed on the game info side pannel
-        self.game_info_gfx.start_timer();
-        
-        self.current_game_stage = FrontendState::Playing;
-    }
 
     pub fn playing_state_handler(&mut self, e : impl GenericEvent ) {
             
@@ -124,7 +153,19 @@ impl Frontend{
                 });
             }
             
-    
+            if let Some(args) = e.update_args() {
+                while let Ok(evt) = self.frontend_event_receiver.try_recv() {
+                    match evt {
+                        Event::EndGame { game_end_reason } => {
+                            self.end_game(game_end_reason);
+                            return 
+                        },
+                        
+                        _ => self.update_model(evt)
+                    }
+                }
+            }
+
             if let Some(args) = e.press_args() {
                 match args {
                     Button::Keyboard(key) => {
@@ -155,50 +196,22 @@ impl Frontend{
             
                 // The board is always drawn
                 Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
+
                 self.end_game_box.render(&mut self.glyphs,  &c, g);
+                
                 self.glyphs.factory.encoder.flush(device);
 
             });
         }
     }
 
-    fn draw_game_board(gfx_map: &mut GfxMap, game_info_gfx : &mut GameInfoGfx, glyphs: &mut Glyphs, c: &Context, g: &mut G2d) {
-        clear(config::BACKGROUND_COLOR, g);
-        Self::render_title(glyphs,  &c, g);
-        gfx_map.render(&c, g);
-        game_info_gfx.render(glyphs,  &c, g);
-    }
-
-    fn update_model(&mut self, e: &impl GenericEvent){
-        if let Some(args) = e.update_args() {
-            while let Ok(evt) = self.frontend_event_receiver.try_recv() {
-                match evt {
-                    Event::NewMapLine{} =>{
-                        self.gfx_map.slide();
-                    },
-                    Event::SetTile { position, tile_type } =>{
-                        self.gfx_map.set_tile(position, tile_type);
-                    }
-                    Event::UserDirSet { direction } => {
-                        self.game_info_gfx.set_user_direction(direction);
-                    }, 
-                    Event::UpdateNbHeads { nb_heads } => {
-                        self.game_info_gfx.update_nb_heads(nb_heads);
-                    },
-                    Event::EndGame { game_end_reason } => {
-                        self.end_game_box.update_end_game_reason(game_end_reason);
-                        // Freeze time on the game info side pannel
-                        self.game_info_gfx.freeze_timer();
-                        self.trigger_game_ending_screen(); return }, 
-                }
-            }
-        }
-    }
 
     pub fn run(&mut self) {
         while let Some(e) = self.window.next() {
             
-            self.update_model(&e);
+            while let Ok(evt) = self.frontend_event_receiver.try_recv() {
+                self.update_model(evt);
+            }
 
             match self.current_game_stage{
                 FrontendState::Startup => self.startup_state_handler(e),
