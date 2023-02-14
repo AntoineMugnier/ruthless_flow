@@ -3,3 +3,5 @@ TODO
 - Startup screen
 - bug simultaenous lines in showed onscreen is smaller of 1 than desired 
  
+
+ cargo test  -- --test-threads=1
