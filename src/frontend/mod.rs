@@ -6,7 +6,7 @@ mod startup_screen;
 pub mod config;
 mod end_game_box;
 use crate::{utils::{Coordinates, Direction}, backend::{self, board::EndGameReason}};
-use piston_window::{*, glyph_cache::rusttype::GlyphCache};
+use piston_window::{*};
 
 use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
 
@@ -117,7 +117,7 @@ impl Frontend{
     
     pub fn startup_state_handler(&mut self, e: impl GenericEvent ) {
             
-            if let Some(args) = e.render_args() {
+            if let Some(_args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
 
                 Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
@@ -128,7 +128,7 @@ impl Frontend{
             });
         }
     
-        if let Some(args) = e.update_args() {
+        if let Some(_args) = e.update_args() {
             while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                 self.update_model(evt)
             }
@@ -142,7 +142,7 @@ impl Frontend{
 
     pub fn playing_state_handler(&mut self, e : impl GenericEvent ) {
             
-            if let Some(args) = e.render_args() {
+            if let Some(_args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
                 
                 // The board is always drawn
@@ -152,7 +152,7 @@ impl Frontend{
                 });
             }
             
-            if let Some(args) = e.update_args() {
+            if let Some(_args) = e.update_args() {
                 while let Ok(evt) = self.frontend_event_receiver.try_recv() {
                     match evt {
                         Event::EndGame { game_end_reason } => {
@@ -165,8 +165,8 @@ impl Frontend{
                 }
             }
 
-            if let Some(args) = e.press_args() {
-                match args {
+            if let Some(_args) = e.press_args() {
+                match _args {
                     Button::Keyboard(key) => {
                         match key {
                             Key::Left =>{
@@ -190,7 +190,7 @@ impl Frontend{
     }
 
     pub fn ending_state_handler(&mut self, e: impl GenericEvent ) {
-        if let Some(args) = e.render_args() {
+        if let Some(_args) = e.render_args() {
             self.window.draw_2d(&e, |c, g, device| {
             
                 // The board is always drawn

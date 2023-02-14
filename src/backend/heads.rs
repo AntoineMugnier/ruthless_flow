@@ -141,7 +141,7 @@ impl private::Sealed for SimpleHead {
             // Check if the head has win the game
              if map.is_on_arrival_line(self.position){
                 let event = board::Event::EndGame{end_game_reason : board::EndGameReason::Victory};
-                self.board_events_sender.send(event);
+                self.board_events_sender.send(event).unwrap();
              }
         }
         

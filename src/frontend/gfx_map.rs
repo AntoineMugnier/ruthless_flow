@@ -1,6 +1,6 @@
-use std::{collections::VecDeque, time::{SystemTime, Duration}};
-use piston_window::{Context,color, G2d, clear, rectangle, line, line_from_to, Position, rectangle_from_to, };
-use crate::{backend::{heads::Id,map::TileType}, utils::Coordinates};
+use std::{collections::VecDeque, time::{SystemTime}};
+use piston_window::{Context, G2d, rectangle_from_to, };
+use crate::{backend::{map::TileType}, utils::Coordinates};
 use super::config;
 
 pub struct GfxMap{
@@ -77,7 +77,7 @@ impl GfxMap{
         let tile_height = (config::map::END_Y - config::map::ORIGIN_Y)/  (self.map_nb_visible_lines as f64);
         let tile_length = (config::map::END_X - config::map::ORIGIN_X)/ (self.get_length() as f64);
 
-        let mut draw_tile = |x_origin, y_origin, new_tile_height, tile_type,  c: &Context, g: &mut G2d|{
+        let draw_tile = |x_origin, y_origin, new_tile_height, tile_type,  c: &Context, g: &mut G2d|{
             let x_end = x_origin + tile_length;
             let y_end = y_origin + new_tile_height;
 

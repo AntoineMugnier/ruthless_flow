@@ -1,4 +1,3 @@
-use std::iter::FilterMap;
 
 use super::heads::{Head, Id};
 use crate::utils::{Coordinates, Direction};

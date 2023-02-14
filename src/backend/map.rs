@@ -13,10 +13,6 @@ pub enum TileType {
     Wall,
 }
 
-pub enum SlidingResult{
-    HeadPoppedOut,
-    NoHeadPoppedOut
-}
 #[cfg_attr(test, mockall::automock)]
 pub trait MapTrait {
     fn new(frontend_sender: Sender<frontend::Event>, sto: VecDeque<Vec<TileType>>, usable_map_lines : usize) -> Self;
@@ -77,7 +73,6 @@ impl MapTrait for Map {
     }
 
     fn slide(&mut self){
-        let last_line = self.sto.pop_front().unwrap(); // Remove bottom line of the map
         self.y_offset+=1;
         let evt = frontend::Event::NewMapLine;
         self.frontend_sender.send(evt).unwrap();

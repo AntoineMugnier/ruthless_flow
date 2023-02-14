@@ -1,7 +1,7 @@
 use super::config;
 use super::head_list::HeadList;
 use super::heads::{self, Head, SimpleHead};
-use super::map::{SlidingResult, MapTrait, TileType};
+use super::map::{MapTrait, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
 use crate::mpsc::{Receiver, Sender};
 use crate::frontend;
@@ -72,7 +72,7 @@ impl <MapType: MapTrait> Board<MapType>{
 
     fn send_current_nb_heads(&self){
         let event = frontend::Event::UpdateNbHeads{nb_heads: self.heads.get_nb_heads()};
-        self.frontend_events_sender.send(event);
+        self.frontend_events_sender.send(event).unwrap();
     }
     
     fn kill_head_handler(&mut self, id: heads::Id)   {
@@ -88,7 +88,7 @@ impl <MapType: MapTrait> Board<MapType>{
     fn set_next_head_dir(&mut self, direction: Direction) {
         if direction != self.next_direction{
             self.next_direction = direction;
-            self.frontend_events_sender.send(frontend::Event::UserDirSet{direction});
+            self.frontend_events_sender.send(frontend::Event::UserDirSet{direction}).unwrap();
         }
         
     }

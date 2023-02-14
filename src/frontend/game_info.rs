@@ -1,4 +1,4 @@
-use piston_window::{Context, G2d,line, color, text, DrawState, Transformed, glyph_cache::rusttype::GlyphCache, TextureSettings, Glyphs, Flip, Texture, G2dTexture, G2dTextureContext, image, rectangle::{square, self}, rectangle_from_to};
+use piston_window::{Context, G2d, text, Transformed, Glyphs, rectangle_from_to};
 use std::time::{SystemTime, Duration};
 
 use crate::utils::Direction;

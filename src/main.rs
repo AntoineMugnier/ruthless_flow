@@ -6,7 +6,6 @@ use crate::backend::board::Board;
 use backend::map::*;
 use std::thread;
 use frontend::Frontend;
-use std::collections::VecDeque;
 use file_parsing::read_map;
 use frontend::gfx_map::GfxMap;
 mod mpsc;
@@ -14,6 +13,7 @@ mod mpsc;
 #[cfg(not(test))]
 use crate::mpsc::{channel};
 
+#[cfg(not(test))]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     assert_ne!(args.len(), 1, "Missing map path argument");
