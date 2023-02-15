@@ -1,10 +1,9 @@
 
-use super::board;
 use super::direction_picker::DirectionPicker;
 use crate::mpsc::Sender;
 use super::map::{MapTrait, TileType};
 use crate::utils::{Coordinates, Direction, DirectionFlags};
-
+use crate:: backend::{self};
 
 pub enum Event<'a, MapType: MapTrait> {
     MoveHead {
@@ -19,7 +18,7 @@ pub struct SimpleHead {
     id: Id,
     position: Coordinates,
     coming_from: Direction,
-    board_events_sender: Sender<board::Event>,
+    board_events_sender: Sender<backend::Event>,
     head_split : bool
 
 }
@@ -29,7 +28,7 @@ pub trait Head: private::Sealed {
         id: Id,
         position: Coordinates,
         coming_from: Direction,
-        board_events_sender: Sender<board::Event>,
+        board_events_sender: Sender<backend::Event>,
     ) -> Self;
     fn dispatch(&mut self, event: Event<impl MapTrait>);
     fn get_id(&mut self) -> Id;
@@ -106,9 +105,9 @@ impl private::Sealed for SimpleHead {
         // Try to explore explore the `proposed_direction`. If the move is impossible, explore all the other authorized directions around the head.
         if let Some((chosen_direction, target_tile, target_position)) = self.explore_direction(self.get_position(), proposed_direction, &mut prohibited_directions, map){
 
-            // Order the board to create a new head if the tile on which we are on a separator
+            // Order the backend to create a new head if the tile on which we are on a separator
             if self.head_split {
-                let add_head_event = board::Event::AddHead {
+                let add_head_event = backend::Event::AddHead {
                     position: self.get_position(),
                     coming_from: self.get_provenance(),
                     parent_direction: chosen_direction,
@@ -122,9 +121,9 @@ impl private::Sealed for SimpleHead {
 
             //Special action depending on the type of tile we reach
             match target_tile{
-                // Order the board to kill self
+                // Order the backend to kill self
                 TileType::Marked{..} | TileType::Head{..} => {
-                    let remove_head_event = board::Event::KillHead { id: self.id };
+                    let remove_head_event = backend::Event::KillHead { id: self.id };
                     self.board_events_sender.send(remove_head_event).unwrap();
                 }
                 // Move the head to the location and mark the tile
@@ -140,7 +139,7 @@ impl private::Sealed for SimpleHead {
 
             // Check if the head has win the game
              if map.is_on_arrival_line(self.position){
-                let event = board::Event::EndGame{end_game_reason : board::EndGameReason::Victory};
+                let event = backend::Event::EndGame{end_game_reason : backend::EndGameReason::Victory};
                 self.board_events_sender.send(event).unwrap();
              }
         }
@@ -194,7 +193,7 @@ impl Head for SimpleHead {
         id: Id,
         position: Coordinates,
         coming_from: Direction,
-        board_events_sender: Sender<board::Event>,
+        board_events_sender: Sender<backend::Event>,
     ) -> SimpleHead { // TODO, initialize with map
         SimpleHead {
             id,
@@ -222,7 +221,7 @@ impl Head for SimpleHead {
 mod tests {
     use mockall::{Sequence};
     use super::super::map::MockMapTrait;
-    use crate::{mpsc::{MockSender, SendError}, backend::board::EndGameReason};
+    use crate::{mpsc::{MockSender, SendError}, backend::{self}};
 
     use super::*;
 
@@ -266,7 +265,7 @@ pub struct ToWall<'a>{pub ways: Vec<Way> ,pub picker_ctx : &'a PickerCtx}
 
 }
 
-fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_sender : &mut MockSender<board::Event>, tc: &test_conditions::General){
+fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, backend_events_sender : &mut MockSender<backend::Event>, tc: &test_conditions::General){
     let original_position = tc.previous_way.alt_target_position;
     let original_direction = tc.previous_way.alt_direction;
 
@@ -307,12 +306,12 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
     }
 
     if let Some(_) = tc.on_separator{
-        board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
+        backend_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
             match board_event{
-            board::Event::AddHead { position, coming_from, parent_direction} => *position==original_position && *coming_from == original_direction.reverse() && *parent_direction==target_direction ,
+            backend::Event::AddHead { position, coming_from, parent_direction} => *position==original_position && *coming_from == original_direction.reverse() && *parent_direction==target_direction ,
             _ => return false
         }
-        }).return_const(Result::<(), SendError<board::Event>>::Ok(()));
+        }).return_const(Result::<(), SendError<backend::Event>>::Ok(()));
     }
 
     map.expect_set_tile().once().in_sequence(seq)
@@ -321,12 +320,12 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
 
     match tc.last_stage {
         test_conditions::LastStage::ToMarked{head_id:expected_id} => {
-            board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
+            backend_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
                 match board_event{
-                board::Event::KillHead {id} =>  *id == expected_id,
+                backend::Event::KillHead {id} =>  *id == expected_id,
                 _ => return false
             }}
-            ).return_const(Result::<(), SendError<board::Event>>::Ok(()));
+            ).return_const(Result::<(), SendError<backend::Event>>::Ok(()));
         },
         test_conditions::LastStage::ToFree{head_id} | test_conditions::LastStage::ToSeparator{head_id} => {
             map.expect_set_tile().once().in_sequence(seq)
@@ -340,12 +339,12 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, board_board_events_
 
     match tc.finish_on_arrival_line{
         Some(_) => {
-            board_board_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
+            backend_events_sender.expect_send().once().in_sequence(seq).withf(move |board_event| {
                 match board_event{
-                board::Event::EndGame {end_game_reason : EndGameReason::Victory} =>  return true,
+                backend::Event::EndGame {end_game_reason : backend::EndGameReason::Victory} =>  return true,
                 _ => return false
             }}
-            ).return_const(Result::<(), SendError<board::Event>>::Ok(()));
+            ).return_const(Result::<(), SendError<backend::Event>>::Ok(()));
         },
         None => {},
     }
@@ -366,7 +365,7 @@ fn test_basic_moves(){
         
     let mut seq = Sequence::new();
     let mut map = MockMapTrait::default();
-    let mut board_board_events_sender = Sender::default();
+    let mut backend_events_sender = Sender::default();
     let picker_ctx  = DirectionPicker::pick_context();
     let head_id = 524;
     let foreign_head_id = 326;
@@ -385,7 +384,7 @@ fn test_basic_moves(){
         finish_on_arrival_line: None
     };
 
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc0);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc0);
     
     // Test 1: Normal move to free tile with chosen direction accepted 
     let previous_way_1 = target_way_0;
@@ -402,7 +401,7 @@ fn test_basic_moves(){
         finish_on_arrival_line: None
     };
 
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc1);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc1);
 
     // Test 2: Chosen direction refused because it's backward leads to move to free tile
     let previous_way_2 = target_way_1;
@@ -419,7 +418,7 @@ fn test_basic_moves(){
         finish_on_arrival_line: None
     };
 
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc2);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc2);
 
     // Test 3: Chosen direction is refused because of a wall 
     let previous_way_3 = target_way_2;
@@ -436,7 +435,7 @@ fn test_basic_moves(){
         finish_on_arrival_line: None
 
     };
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc3);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc3);
     
 
     // Test 4: Chosen direction leads to free tile
@@ -452,7 +451,7 @@ fn test_basic_moves(){
         last_stage : test_conditions::LastStage::ToFree{head_id},
         finish_on_arrival_line: None
     };
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc4);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc4);
 
     // Test 5: Chosen direction leads to marked tile and then to merge
     let previous_way_5 = target_way_4;
@@ -466,9 +465,9 @@ fn test_basic_moves(){
         last_stage : test_conditions::LastStage::ToMarked{head_id},
         finish_on_arrival_line: None
     };
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc5);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc5);
 
-    let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  board_board_events_sender);
+    let mut simple_head = SimpleHead::new(head_id, previous_way_0.alt_target_position, previous_way_0.alt_direction,  backend_events_sender);
 
     dispatch_head_evt(target_way_0.alt_direction, &mut map, &mut simple_head);
     dispatch_head_evt(target_way_1.alt_direction, &mut map, &mut simple_head);
@@ -482,7 +481,7 @@ fn test_basic_moves(){
 fn test_reaching_arrival_line(){
     let mut seq = Sequence::new();
     let mut map = MockMapTrait::default();
-    let mut board_board_events_sender = Sender::default();
+    let mut backend_events_sender = Sender::default();
     let picker_ctx  = DirectionPicker::pick_context();
     let head_id = 524;
 
@@ -501,9 +500,9 @@ fn test_reaching_arrival_line(){
         finish_on_arrival_line: Some(test_conditions::FinishOnArrivalLine {})
     };
 
-    test_move(&mut seq, &mut map, &mut board_board_events_sender, &tc6);
+    test_move(&mut seq, &mut map, &mut backend_events_sender, &tc6);
 
-    let mut simple_head = SimpleHead::new(head_id, previous_way_6.alt_target_position, previous_way_6.alt_direction,  board_board_events_sender);
+    let mut simple_head = SimpleHead::new(head_id, previous_way_6.alt_target_position, previous_way_6.alt_direction,  backend_events_sender);
     dispatch_head_evt(wrong_target_way_6.alt_direction, &mut map, &mut simple_head);
 }
 

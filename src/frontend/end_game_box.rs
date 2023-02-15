@@ -1,6 +1,6 @@
 use piston_window::{Glyphs, Context, G2d, rectangle_from_to, Transformed, Text};
 
-use crate::{frontend::config, backend::board::EndGameReason};
+use crate::{frontend::config, backend::EndGameReason};
 
 pub struct EndGameBox{
 end_game_reason : Option<EndGameReason>,

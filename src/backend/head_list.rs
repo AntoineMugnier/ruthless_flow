@@ -2,7 +2,6 @@
 use super::heads::{Head, Id};
 use crate::utils::{Coordinates, Direction};
 use crate::mpsc::Sender;
-use super::board;
 
 pub struct HeadList<HeadType: Head>{
     heads_vec: Vec<Option<HeadType>>,
@@ -34,7 +33,7 @@ impl <HeadType : Head> HeadList<HeadType>{
     pub fn add_head(&mut self,    
     position: Coordinates,
     coming_from: Direction,
-    events_sender: Sender<board::Event>)-> &mut HeadType{
+    events_sender: Sender<super::Event>)-> &mut HeadType{
 
         let mut free_slot_pos : Option<usize> = None;
 

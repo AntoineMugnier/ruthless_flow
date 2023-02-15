@@ -2,7 +2,6 @@ mod backend;
 mod frontend;
 mod file_parsing;
 mod utils;
-use crate::backend::board::Board;
 use backend::map::*;
 use std::thread;
 use frontend::Frontend;
@@ -10,6 +9,7 @@ use file_parsing::read_map;
 use frontend::gfx_map::GfxMap;
 mod mpsc;
 
+use crate::backend::Backend;
 #[cfg(not(test))]
 use crate::mpsc::{channel};
 
@@ -28,14 +28,14 @@ fn main() {
     let sto = read_map(map_path);
 
     let map_nb_visible_lines : usize = ((crate::frontend::config::map::LENGTH_Y/crate::frontend::config::map::LENGTH_X) * (sto[0].len() as f64)) as usize;
-    let backend_event_sender_clone = backend_event_sender.clone(); // For the Board to post events to itself
+    let backend_event_sender_clone = backend_event_sender.clone(); // For the Backend to post events to itself
     let frontend_event_sender_clone = frontend_event_sender.clone();
 
     let  map = Map::new(frontend_event_sender,  sto.clone(),  map_nb_visible_lines);
     let gfx_map = GfxMap::new(map_nb_visible_lines, sto);
 
     thread::spawn(move || {
-            let mut board: Board<Map>  = Board::new(map, backend_event_sender_clone, backend_receiver, frontend_event_sender_clone);
+            let mut board: Backend<Map>  = Backend::new(map, backend_event_sender_clone, backend_receiver, frontend_event_sender_clone);
             board.run();
         });
 

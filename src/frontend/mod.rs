@@ -5,10 +5,10 @@ pub mod game_info;
 mod startup_screen;
 pub mod config;
 mod end_game_box;
-use crate::{utils::{Coordinates, Direction}, backend::{self, board::EndGameReason}};
+use crate::{utils::{Coordinates, Direction}, backend::{self}};
 use piston_window::{*};
 
-use crate::{mpsc::{Sender, Receiver}, backend::{board, map::TileType}};
+use crate::{mpsc::{Sender, Receiver}, backend::{map::TileType}};
 
 use self::{gfx_map::GfxMap, game_info::GameInfoGfx, startup_screen::StartupScreen, end_game_box::EndGameBox};
 
@@ -24,7 +24,7 @@ pub enum Event {
     SetTile{position: Coordinates, tile_type: TileType},
     UserDirSet{direction : Direction},
     UpdateNbHeads{nb_heads: usize},
-    EndGame{game_end_reason: board::EndGameReason}
+    EndGame{game_end_reason: backend::EndGameReason}
 }
 pub struct Frontend{
     window: PistonWindow,
@@ -33,13 +33,13 @@ pub struct Frontend{
     game_info_gfx : GameInfoGfx,
     startup_screen : StartupScreen,
     end_game_box : EndGameBox,
-    backend_event_sender: Sender<board::Event>,
+    backend_event_sender: Sender<backend::Event>,
     frontend_event_receiver: Receiver<Event>,
     current_game_stage : FrontendState
 }
 impl Frontend{
 
-    pub fn new(backend_event_sender: Sender<board::Event>, frontend_event_receiver: Receiver<Event>, gfx_map : GfxMap) -> Frontend{
+    pub fn new(backend_event_sender: Sender<backend::Event>, frontend_event_receiver: Receiver<Event>, gfx_map : GfxMap) -> Frontend{
         
         let mut window: PistonWindow = 
             WindowSettings::new("Ruthless Flow", config::SCREEN_SIZE)
@@ -68,7 +68,7 @@ impl Frontend{
         self.gfx_map.start_sliding();
 
         // Inform backend that a game has started
-        let event = backend::board::Event::StartGame;
+        let event = backend::Event::StartGame;
         self.backend_event_sender.send(event).unwrap();
 
         // Start the playing time chrono printed on the game info side pannel
@@ -77,7 +77,7 @@ impl Frontend{
         self.current_game_stage = FrontendState::Playing;
     }
 
-    fn end_game(&mut self, game_end_reason: EndGameReason) {
+    fn end_game(&mut self, game_end_reason: backend::EndGameReason) {
         self.end_game_box.update_end_game_reason(game_end_reason);
                     
         // Freeze time on the game info side pannel
@@ -86,7 +86,7 @@ impl Frontend{
         self.trigger_game_ending_screen();
     }
 
-    fn draw_game_board(gfx_map: &mut GfxMap, game_info_gfx : &mut GameInfoGfx, glyphs: &mut Glyphs, c: &Context, g: &mut G2d) {
+    fn draw_game_backend(gfx_map: &mut GfxMap, game_info_gfx : &mut GameInfoGfx, glyphs: &mut Glyphs, c: &Context, g: &mut G2d) {
         clear(config::BACKGROUND_COLOR, g);
         Self::render_title(glyphs,  &c, g);
         gfx_map.render(&c, g);
@@ -120,7 +120,7 @@ impl Frontend{
             if let Some(_args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
 
-                Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
+                Self::draw_game_backend(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
 
                 self.startup_screen.render(&mut self.glyphs, &c, g);
 
@@ -145,8 +145,8 @@ impl Frontend{
             if let Some(_args) = e.render_args() {
                 self.window.draw_2d(&e, |c, g, device| {
                 
-                // The board is always drawn
-                Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
+                // The backend is always drawn
+                Self::draw_game_backend(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
 
                 self.glyphs.factory.encoder.flush(device);
                 });
@@ -193,8 +193,8 @@ impl Frontend{
         if let Some(_args) = e.render_args() {
             self.window.draw_2d(&e, |c, g, device| {
             
-                // The board is always drawn
-                Self::draw_game_board(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
+                // The backend is always drawn
+                Self::draw_game_backend(&mut self.gfx_map, &mut self.game_info_gfx ,&mut self.glyphs, &c, g);
 
                 self.end_game_box.render(&mut self.glyphs,  &c, g);
                 
@@ -219,7 +219,7 @@ impl Frontend{
 
 fn send_next_direction(&mut self, direction : Direction){
 
-    let event = backend::board::Event::SetNextHeadDir { direction};
+    let event = backend::Event::SetNextHeadDir { direction};
     self.backend_event_sender.send(event).unwrap();
     
 }
