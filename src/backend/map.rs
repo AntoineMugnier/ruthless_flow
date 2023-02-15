@@ -73,6 +73,7 @@ impl MapTrait for Map {
     }
 
     fn slide(&mut self){
+        self.sto.pop_front().unwrap(); // Remove bottom line of the map
         self.y_offset+=1;
         let evt = frontend::Event::NewMapLine;
         self.frontend_sender.send(evt).unwrap();
