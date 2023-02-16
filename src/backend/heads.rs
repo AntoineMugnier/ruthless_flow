@@ -12,15 +12,16 @@ pub enum Event<'a, MapType: MapTrait> {
         map: &'a mut MapType,
     },
 }
+// Used for differenciating heads
 pub type Id = u32;
 
+// Store all head attributes and give them an autonomous behaviour through the Head trait
 pub struct SimpleHead {
     id: Id,
     position: Coordinates,
     coming_from: Direction,
     board_events_sender: Sender<backend::Event>,
-    head_split : bool
-
+    head_split : bool // Tells if a head need to be split in next move
 }
 
 pub trait Head: private::Sealed {
@@ -157,7 +158,6 @@ impl private::Sealed for SimpleHead {
         }
     }
 
-    
     fn explore_direction(&self,
         original_position: Coordinates,
         chosen_direction: Direction,
@@ -354,14 +354,6 @@ fn test_move(seq : & mut Sequence, map: & mut  MockMapTrait, backend_events_send
 
 #[test]
 fn test_basic_moves(){
-    //Test variants:
-    //   - Move to Free Tile
-    //   - Try Move to Wall
-    //   - Try Move to map edge
-    //   - Move to separator and diverge
-    //   - Move to Marked and kill
-    // - inject prohibited directions
-
         
     let mut seq = Sequence::new();
     let mut map = MockMapTrait::default();
@@ -485,7 +477,7 @@ fn test_reaching_arrival_line(){
     let picker_ctx  = DirectionPicker::pick_context();
     let head_id = 524;
 
-    // Test 6: Chosen direction leads to marked tile and then to merge
+    // Test 6: Chosen direction leads to a free tile on the arrival line
     let previous_way_6 = test_conditions::Way{alt_direction: Direction::Up, alt_target_position :Coordinates{x :10, y:10}, alt_target_tile : TileType::Free};
     let wrong_target_way_6 = test_conditions::Way{alt_direction: Direction::Left, alt_target_position : Coordinates{x :4, y:6}, alt_target_tile : TileType::Marked { id: head_id }};
     let target_way_6 = test_conditions::Way{alt_direction: Direction::Right, alt_target_position : Coordinates{x :6, y:5}, alt_target_tile : TileType::Free};

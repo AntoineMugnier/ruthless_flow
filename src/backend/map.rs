@@ -5,6 +5,8 @@ use crate::frontend;
 
 use super::heads::Id;
 #[derive(Copy, Clone, Debug, PartialEq)]
+
+// Each tile of the map can be or become one of these variants
 pub enum TileType {
     Head{id : Id},
     Marked{id : Id},
@@ -14,6 +16,7 @@ pub enum TileType {
 }
 
 #[cfg_attr(test, mockall::automock)]
+// Defines interface for reading, editiing tiles, and sliding the map
 pub trait MapTrait {
     fn new(frontend_sender: Sender<frontend::Event>, sto: VecDeque<Vec<TileType>>, usable_map_lines : usize) -> Self;
     fn set_tile(&mut self, position: Coordinates, tile_type: TileType);
@@ -30,6 +33,7 @@ pub trait MapTrait {
     fn will_head_pop_out_during_next_sliding(&self) -> bool;
 }
 
+// Stores all the tiles of the game and manage their editions and reading through the map `MapTrait` trait.
 pub struct Map {
     pub sto: VecDeque<Vec<TileType>>,
     frontend_sender: Sender<frontend::Event>,
@@ -37,6 +41,7 @@ pub struct Map {
     y_offset : usize
 }
 impl Map {}
+
 impl MapTrait for Map {
     fn new(
         frontend_sender: Sender<frontend::Event>, 
@@ -51,16 +56,18 @@ impl MapTrait for Map {
             y_offset : 0
         }
     }
+
+    // Return true if a head tile is on the arrival line, else false
     fn is_on_arrival_line(&self, position: Coordinates) -> bool{
-        //Arrival line position is variable
+
         let arrival_line_y = self.get_height()  - self.map_nb_visible_lines;
         (position.y - self.y_offset) == arrival_line_y 
     }
     
+    // Return true if a head tile is in on the first line of the map
     fn will_head_pop_out_during_next_sliding(&self) -> bool{
         let next_line_to_pop_out = &self.sto[0]; // Bottom line of the map
 
-        // If a head tile has been popped out, stop game
         for tile in next_line_to_pop_out{
             match tile {
                 TileType::Head {..} =>{
@@ -72,6 +79,7 @@ impl MapTrait for Map {
         false
     }
 
+    // Remove the first line of the map but **does not** affect coordinates referential 
     fn slide(&mut self){
         self.sto.pop_front().unwrap(); // Remove bottom line of the map
         self.y_offset+=1;
@@ -94,7 +102,7 @@ impl MapTrait for Map {
         self.sto[position.y - self.y_offset][position.x]
     }
 
-
+    // Get the tile type and the coordinates of a tile adjacent to a certain position
     fn get_neighbour_tile(
         &mut self,
         position: Coordinates,

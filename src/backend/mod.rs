@@ -59,6 +59,8 @@ pub struct Backend<MapType: MapTrait> {
 }
 
 impl <MapType: MapTrait> Backend<MapType>{
+
+    // Called periodically to give all heads one tile move
     fn move_heads_handler(&mut self, direction: Direction) {
         let map = &mut self.map;
 
@@ -69,8 +71,8 @@ impl <MapType: MapTrait> Backend<MapType>{
         }
         
     }
-
-    fn end_game(&mut self, end_game_reason : EndGameReason){
+    
+    fn trigger_game_end(&mut self, end_game_reason : EndGameReason){
         let event = frontend::Event::EndGame{game_end_reason: end_game_reason};
         self.frontend_events_sender.send(event).unwrap();
         self.board_state = BoardState::Ending;
@@ -81,12 +83,16 @@ impl <MapType: MapTrait> Backend<MapType>{
         self.frontend_events_sender.send(event).unwrap();
     }
     
-    fn kill_head_handler(&mut self, id: heads::Id)   {
-        self.heads.remove(id);
+    fn kill_head_handler(&mut self, id: heads::Id){
+
+        // Remove the head from the head list
+        self.heads.remove(id); 
 
         self.send_current_nb_heads();
+
+        // Game end if no heads remain
         if self.heads.get_nb_heads() ==0{
-            self.end_game(EndGameReason::NoRemainingHeads);
+            self.trigger_game_end(EndGameReason::NoRemainingHeads);
             
         }
     }
@@ -170,13 +176,15 @@ impl <MapType: MapTrait> Backend<MapType>{
 
     fn slide_map_handler(&mut self) {
         if self.map.will_head_pop_out_during_next_sliding(){
-            self.end_game(EndGameReason::HeadPoppedOutByRisingEdge);
+            self.trigger_game_end(EndGameReason::HeadPoppedOutByRisingEdge);
         }
         else{
             self.map.slide();
         }
     }
     
+    // The first state in which the backend state machine enters. Just wait for the start signal in order to
+    // make the backend switch to the next state
     pub fn startup_state_handler(&mut self, evt : Event){
             match evt {
                 Event::StartGame => {
@@ -208,15 +216,18 @@ impl <MapType: MapTrait> Backend<MapType>{
                 self.add_head_handler(position, coming_from, parent_direction)
             },
             Event::EndGame{end_game_reason} => {
-                self.end_game(end_game_reason);
+                self.trigger_game_end(end_game_reason);
             }
             _ => {}
         }
     }
 
+    // Corresponds to a dead state which ignore all incoming events
     pub fn ending_state_handler(&mut self, _evt : Event){
     }
 
+// The entry point of the backend which corresponds to a loop waiting and processing indefinitely for the 
+// incoming events coming from the unique queue.
     pub fn run(&mut self) {
 
         while let Ok(evt) = self.board_events_receiver.recv() {
